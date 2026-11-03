@@ -39,3 +39,18 @@ jobs:
           name: bundle-${{ matrix.os }}
           path: src-tauri/target/release/bundle/
           if-no-files-found: warn
+
+  macos-saver:
+    # Native .saver bundle (ad-hoc signed; not notarized). Built with swiftc, no Xcode project.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: ./scripts/build-macos-saver.sh
+      - run: swiftc -O -framework ScreenSaver -framework WebKit -o build/macos-saver/saver-harness macos-saver/harness/main.swift
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-saver
+          path: build/macos-saver/Where the Water Goes.saver

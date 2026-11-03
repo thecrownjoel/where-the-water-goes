@@ -1,7 +1,7 @@
 # Platforms and screensaver status
 
 **Summary:**
-- v0.1 is a desktop app with an **idle fullscreen mode**. It is not yet a verified native screensaver on any OS.
+- v0.1 is a desktop app with an **idle fullscreen mode**. It is not yet a verified native screensaver on any OS. A native macOS `.saver` builds and renders in a test harness, but has not yet been run inside System Settings.
 - The macOS build was compiled and run on an M1 (macOS Darwin 24.6).
 - Windows and Linux builds are set up in CI (`.github/workflows/ci.yml`) but have not been run or tested by hand.
 
@@ -26,10 +26,15 @@
   - Exit-on-input in the built app, and the idle trigger. Synthetic input wasn't available in this environment.
   - Multi-monitor behaviour. Only one display was present.
 - **DMG:** `bundle_dmg.sh` needs Finder automation permission. It failed here with an AppleEvent timeout; CI should build it.
-- **No native `.saver`.** It would need:
-  1. A separate Swift `ScreenSaverView` plug-in embedding WKWebView with the built `dist/`.
-  2. Developer ID signing and notarization.
-  3. Workarounds for the `legacyScreenSaver` bugs open on macOS 26: savers that never stop, duplicate instances, problems with second monitors (FB19204084, FB19201567, FB19206021).
+- **Native `.saver` (spike, 2026-11-03).** `macos-saver/` holds a Swift `ScreenSaverView` that hosts a WKWebView running the same web build. Build it with `./scripts/build-macos-saver.sh` (Command Line Tools only, no Xcode) → `build/macos-saver/Where the Water Goes.saver`, a universal (arm64 + x86_64), ad-hoc-signed bundle of about 9 MB.
+  - **How it works:** the web files are bundled inside the `.saver` and served through a custom `wtrshd://app/` scheme that serves only files under `Contents/Resources/web` and sends the same CSP as the Tauri build (network limited to `api.waterdata.usgs.gov`). The page gets `?mode=saver&host=macos-saver`, so it never exits itself: the system host dismisses the saver on input. The web view ignores mouse and keyboard.
+  - **Preview pane:** with `preview=1` the page drops all text and renders at low quality.
+  - **Verified** with `macos-saver/harness` (loads the bundle through `NSBundle.principalClass`, as the screensaver host does, and snapshots the web view): on macOS 15.6.1 / M1 it loaded live USGS data for all three layers, WebGL 2 was available, the status line showed mode, observation and retrieval times, and the IndexedDB cache persisted between runs. The preview size rendered the globe without text.
+  - **Not verified:** running inside System Settings and `legacyScreenSaver` (it has not been installed into `~/Library/Screen Savers`), multiple monitors, macOS 26, and the stop workaround below.
+  - **Known host problems:** on macOS 14 and later, `legacyScreenSaver` is widely reported to keep savers running after dismissal, to create duplicate instances, and to mishandle second monitors (FB19204084, FB19201567, FB19206021). The view exits its process on the `com.apple.screensaver.willstop` distributed notification. This is a community workaround, not documented by Apple. **Verify before release.**
+  - **Settings:** the `.saver` has no configuration sheet and its web storage is separate from the app's, so it always runs with default settings (reduced motion still follows the system setting).
+  - **Distribution** needs Developer ID signing and notarization (not done). An ad-hoc-signed `.saver` installs only on the machine that built it, after Gatekeeper approval.
+  - **To try it:** double-click the built `.saver` (System Settings offers to install it for the current user), or copy it into `~/Library/Screen Savers/`. Remove it from that folder to uninstall.
 
   Apple has said no modern screensaver API will come in macOS 26.
 - **Gatekeeper:** unsigned builds need right-click → Open the first time.

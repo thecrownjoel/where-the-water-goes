@@ -12,7 +12,7 @@ There are three different products here, and they should not be confused:
 |---|---|---|---|
 | **Normal desktop app** (explorer window) | ✅ built and run | ✅ expected (CI build, untested by hand) | ✅ expected (CI build). WebGL on WebKitGTK can fall back to software rendering, so we provide a low-quality mode |
 | **Idle fullscreen mode** (tray app; opens fullscreen after N minutes idle) | ✅ built. Saver windows were run and rendered; idle trigger not yet tested by hand | ✅ implemented, untested | X11: implemented, untested. Wayland: partial (KDE/wlroots); GNOME offers no idle API to third-party apps |
-| **True native OS screensaver** | ❌ Not produced by Tauri. Would need a separate Swift `.saver` bundle (a ScreenSaverView with a WKWebView), Developer ID signing and notarization, and workarounds for open macOS 26 host bugs. Deferred | ⚠️ Feasible. A `.scr` is a renamed `.exe`; we handle `/s` and `/c`. `/p` (Control Panel preview) draws a static thumbnail natively (untested on Windows) | ⚠️ X11/XScreenSaver only, and needs native embedding work. Not possible on GNOME/Wayland |
+| **True native OS screensaver** | ◐ Not produced by Tauri. A separate Swift `.saver` (ScreenSaverView + WKWebView, `macos-saver/`) builds and renders live data in a test harness. Still needed: a run inside System Settings, Developer ID signing and notarization, and checks of the macOS 14+ host bugs | ⚠️ Feasible. A `.scr` is a renamed `.exe`; we handle `/s` and `/c`. `/p` (Control Panel preview) draws a static thumbnail natively (untested on Windows) | ⚠️ X11/XScreenSaver only, and needs native embedding work. Not possible on GNOME/Wayland |
 
 **We do not claim to be a native screensaver on any platform yet.** v0.1 ships the app plus an idle fullscreen mode, and a `.scr` path on Windows that must still be verified on real hardware.
 
@@ -106,4 +106,5 @@ The approved plan, as executed:
    - federal hydrography (NWM hydrofabric) in place of Natural Earth;
    - a SWOT lake-level layer;
    - ~~a Windows `/p` preview~~ (static thumbnail done, needs a Windows test);
-   - Developer ID signing and a native `.saver` spike.
+   - ~~a native `.saver` spike~~ (2026-11-03: builds and renders in a harness; see PLATFORMS.md);
+   - Developer ID signing and notarization, then a `.saver` test inside System Settings.

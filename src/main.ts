@@ -11,7 +11,7 @@ import { decodeSnapshot } from './data/archive.ts';
 import { LAYERS, type LayerSpec } from './data/layers.ts';
 import type { GaugeSnapshot } from './data/types.ts';
 import { rainFocus } from './viz/focus.ts';
-import { armSaverExit, diag, exitSaver, launchMode, powerState } from './platform/index.ts';
+import { armSaverExit, diag, embeddedHost, exitSaver, isPreviewPane, launchMode, powerState } from './platform/index.ts';
 
 async function loadArchived(layer: LayerSpec = LAYERS.discharge) {
   const res = await fetch(`${import.meta.env.BASE_URL}${layer.archivePath}`);
@@ -22,6 +22,10 @@ async function loadArchived(layer: LayerSpec = LAYERS.discharge) {
 async function boot() {
   const launch = launchMode();
   const saver = launch === 'saver';
+  // The System Settings preview pane is a ~300 px thumbnail: text there is unreadable, so it
+  // shows only the globe and its marks, with no text; the full-size saver carries the status line.
+  const previewPane = isPreviewPane();
+  if (previewPane) document.documentElement.classList.add('preview-pane');
   let settings = loadSettings();
   const overlay = new Overlay(settings, saver);
   const canvas = document.querySelector('#globe') as HTMLCanvasElement;
@@ -34,7 +38,7 @@ async function boot() {
     reducedMotion: prefersReducedMotion(s),
     lighting: s.lighting,
     // On battery, "auto" quality drops to low and the frame rate to 30 fps.
-    quality: s.quality === 'auto' ? (onBattery ? 'low' : autoQuality) : s.quality,
+    quality: previewPane ? 'low' : s.quality === 'auto' ? (onBattery ? 'low' : autoQuality) : s.quality,
     fpsCap: onBattery && s.quality === 'auto' ? 30 : s.fpsCap,
     showGauges: s.showGauges,
     showRain: s.showRain,
@@ -153,7 +157,8 @@ async function boot() {
   void checkPower();
   setInterval(() => void checkPower(), 60_000);
 
-  if (saver) armSaverExit(() => void exitSaver());
+  // Inside the native macOS .saver the system host dismisses the screensaver itself.
+  if (saver && !embeddedHost()) armSaverExit(() => void exitSaver());
 }
 
 boot().catch((e) => {

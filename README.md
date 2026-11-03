@@ -29,6 +29,7 @@ npm run dev            # browser at http://localhost:5173
 npm test               # unit tests (Vitest)
 npm run tauri dev      # desktop app
 npm run tauri build    # release bundle for this OS
+./scripts/build-macos-saver.sh   # macOS: native .saver → build/macos-saver/ (experimental)
 ```
 
 Desktop launch modes (see [docs/PLATFORMS.md](docs/PLATFORMS.md)):
@@ -45,7 +46,7 @@ In explore mode, drag to rotate, scroll to zoom, and click a gauge for details.
 
 | | App | Idle fullscreen | Native screensaver |
 |---|---|---|---|
-| macOS | ✅ built and run | ✅ saver windows run; idle trigger untested by hand | ❌ needs a separate Swift `.saver` (not built) |
+| macOS | ✅ built and run | ✅ saver windows run; idle trigger untested by hand | ◐ `.saver` builds (`scripts/build-macos-saver.sh`) and renders live data in a test harness; not yet run in System Settings, unsigned |
 | Windows | CI build, untested | implemented, untested | `.scr` via `scripts/make-scr.mjs`; `/p` preview is a static thumbnail (untested) |
 | Linux | CI build, untested | X11 implemented, untested; Wayland partial | ❌ |
 

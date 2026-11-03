@@ -12,6 +12,19 @@ export function launchMode(): LaunchMode {
   return m === 'saver' || m === 'settings' ? m : 'explore';
 }
 
+/**
+ * Set when the page runs inside the native macOS `.saver` bundle (`?host=macos-saver`).
+ * There the system screensaver host owns input and dismissal, so the page never exits itself.
+ */
+export function embeddedHost(): 'macos-saver' | null {
+  return new URLSearchParams(location.search).get('host') === 'macos-saver' ? 'macos-saver' : null;
+}
+
+/** The small thumbnail pane in macOS System Settings (`?preview=1`): globe only, no text. */
+export function isPreviewPane(): boolean {
+  return embeddedHost() !== null && new URLSearchParams(location.search).get('preview') === '1';
+}
+
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
   if (!isTauri()) return null;
   const { invoke } = await import('@tauri-apps/api/core');

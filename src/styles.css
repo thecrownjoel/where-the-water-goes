@@ -128,3 +128,9 @@ legend { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; col
 @media (prefers-reduced-motion: reduce) {
   canvas#globe, .caption, .mark { transition: none; }
 }
+
+/* macOS System Settings preview thumbnail: globe only. */
+.preview-pane .mark,
+.preview-pane .caption,
+.preview-pane .bar,
+.preview-pane .card { display: none !important; }

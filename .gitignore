@@ -6,3 +6,4 @@ src-tauri/gen/
 *.log
 .data-raw/
 .claude/settings.local.json
+build/
