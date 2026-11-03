@@ -7,8 +7,8 @@ jobs:
   web:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: npm run typecheck
@@ -22,8 +22,8 @@ jobs:
         os: [macos-latest, windows-latest, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: 24, cache: npm }
       - uses: dtolnay/rust-toolchain@stable
       - name: Linux system dependencies
@@ -34,7 +34,7 @@ jobs:
       - run: npm ci
       - run: cargo test --manifest-path src-tauri/Cargo.toml
       - run: npx tauri build --bundles ${{ runner.os == 'macOS' && 'app' || runner.os == 'Windows' && 'nsis' || 'deb,appimage' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: bundle-${{ matrix.os }}
           path: src-tauri/target/release/bundle/
@@ -44,13 +44,13 @@ jobs:
     # Native .saver bundle (ad-hoc signed; not notarized). Built with swiftc, no Xcode project.
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: ./scripts/build-macos-saver.sh
       - run: swiftc -O -framework ScreenSaver -framework WebKit -o build/macos-saver/saver-harness macos-saver/harness/main.swift
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-saver
           path: build/macos-saver/Where the Water Goes.saver
