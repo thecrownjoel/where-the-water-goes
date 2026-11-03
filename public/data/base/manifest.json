@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-11-01T23:46:34.029Z",
+  "generator": "scripts/build-basemap.mjs",
+  "sources": {
+    "noaa-etopo1": {
+      "agency": "NOAA NCEI (formerly NGDC)",
+      "dataset": "ETOPO1 1 Arc-Minute Global Relief Model, ice surface, grid-registered",
+      "retrieval": "NOAA CoastWatch ERDDAP griddap etopo180, stride 10 (0.1667 deg)",
+      "citation": "Amante, C. and B. W. Eakins, ETOPO1 1 Arc-Minute Global Relief Model: Procedures, Data Sources and Analysis. NOAA Technical Memorandum NESDIS NGDC-24, 2009.",
+      "terms": "May be used and redistributed for free; not intended for legal use; no warranty (per ERDDAP dataset license attribute)."
+    },
+    "natural-earth": {
+      "agency": null,
+      "dataset": "Natural Earth vector data (land 1:50m, lakes 1:10m, rivers 1:10m + North America supplement)",
+      "retrieval": "https://github.com/nvkelso/natural-earth-vector (geojson/)",
+      "citation": "Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com.",
+      "terms": "Public domain.",
+      "note": "Not a federal dataset. Used only as a cartographic basemap; replace with USGS NHD/3DHP/WBD in a later milestone."
+    }
+  },
+  "outputs": [
+    {
+      "file": "elevation.bin",
+      "bytes": 4669920,
+      "sha256": "3c7b74a60e4ffdf3f325eb5375046f91eb4de948f008874577cba97b5436f0b7",
+      "source": "noaa-etopo1"
+    },
+    {
+      "file": "elevation.json",
+      "bytes": 181,
+      "sha256": "a112828beefcded5fbfc02004b2521343551adc473c609a0a23002789b80e4a1",
+      "source": "noaa-etopo1"
+    },
+    {
+      "file": "land.json",
+      "bytes": 463472,
+      "sha256": "ef9c7f41abbab4bc9ac8dc6110097b27f3b5fac9b199bc4a213ea2cee889e732",
+      "source": "natural-earth"
+    },
+    {
+      "file": "lakes.json",
+      "bytes": 681584,
+      "sha256": "53c89d85303407b7f96cfb7df1cc59b792173ccab7efdc9eec7815693aa37fe8",
+      "source": "natural-earth"
+    },
+    {
+      "file": "rivers.json",
+      "bytes": 2130439,
+      "sha256": "9342e32a37546230b2192fb21932ba243dbe20a4fe45edc5e7ffc0acafffe927",
+      "source": "natural-earth+noaa-etopo1"
+    }
+  ]
+}

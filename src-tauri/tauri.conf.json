@@ -1,0 +1,44 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Where the Water Goes",
+  "version": "0.1.0",
+  "identifier": "org.wherethewatergoes.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' data: blob:",
+        "connect-src": "'self' ipc: http://ipc.localhost https://api.waterdata.usgs.gov",
+        "worker-src": "'self' blob:",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'"
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Education",
+    "shortDescription": "Public U.S. water data as a living visualization",
+    "copyright": "Where the Water Goes contributors. Data: USGS, NOAA (public domain); Natural Earth (public domain).",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": { "minimumSystemVersion": "11.0" },
+    "windows": { "webviewInstallMode": { "type": "downloadBootstrapper" } }
+  }
+}

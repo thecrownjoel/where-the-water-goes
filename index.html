@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Where the Water Goes</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="description" content="An open-source visualization of U.S. rivers, lakes and stream gauges from public government data." />
+  </head>
+  <body>
+    <canvas id="globe" aria-label="Animated globe showing rivers, lakes and USGS stream gauges"></canvas>
+    <div id="fade" aria-hidden="true"></div>
+
+    <header class="mark" aria-hidden="true">Where the Water Goes</header>
+    <div id="caption" class="caption" role="status" aria-live="polite"></div>
+
+    <footer class="bar">
+      <div class="statuses">
+        <div id="status" class="status" role="status">Loading data…</div>
+        <div id="status-layers" class="status layers" role="status"></div>
+      </div>
+      <div id="notice" class="notice" role="status"></div>
+      <nav class="controls" aria-label="Controls">
+        <button id="btn-mode" type="button">Explore</button>
+        <button id="btn-about" type="button" title="About & data sources (I)">About</button>
+        <button id="btn-settings" type="button" title="Settings (S)">Settings</button>
+      </nav>
+    </footer>
+
+    <aside id="card" class="card" hidden></aside>
+
+    <aside id="about" class="panel" hidden aria-labelledby="about-title">
+      <div class="panel-head">
+        <h2 id="about-title" tabindex="-1">About &amp; data sources</h2>
+        <button type="button" data-close aria-label="Close">×</button>
+      </div>
+      <div id="about-body" class="panel-body"></div>
+    </aside>
+
+    <aside id="settings" class="panel" hidden aria-labelledby="settings-title">
+      <div class="panel-head">
+        <h2 id="settings-title" tabindex="-1">Settings</h2>
+        <button type="button" data-close aria-label="Close">×</button>
+      </div>
+      <form id="settings-form" class="panel-body settings">
+        <label>Data
+          <select name="dataMode">
+            <option value="auto">Live from USGS (falls back to cache)</option>
+            <option value="demo">Archived snapshot (offline demo)</option>
+          </select>
+        </label>
+        <label>Motion
+          <select name="reducedMotion">
+            <option value="system">Follow system setting</option>
+            <option value="on">Reduced motion</option>
+            <option value="off">Full motion</option>
+          </select>
+        </label>
+        <label>Visual intensity
+          <input type="range" name="intensity" min="0.3" max="1" step="0.05" />
+        </label>
+        <label>Lighting
+          <select name="lighting">
+            <option value="sun">Real sun position</option>
+            <option value="night">Night</option>
+          </select>
+        </label>
+        <label>Quality
+          <select name="quality">
+            <option value="auto">Automatic</option>
+            <option value="high">High (bloom, full resolution)</option>
+            <option value="low">Low (battery saver)</option>
+          </select>
+        </label>
+        <label>Frame rate
+          <select name="fpsCap">
+            <option value="30">30 fps (recommended)</option>
+            <option value="60">60 fps</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" name="showGauges" /> Show stream gauges</label>
+        <label class="check"><input type="checkbox" name="showRain" /> Show rain at gauges</label>
+        <label class="check"><input type="checkbox" name="showLakes" /> Show lake &amp; reservoir level gauges</label>
+        <label class="check"><input type="checkbox" name="showCaptions" /> Show place captions</label>
+        <fieldset disabled>
+          <legend>Volunteer computing</legend>
+          <label class="check"><input type="checkbox" name="compute" /> Contribute computing (not available yet)</label>
+          <p class="small">Off and unavailable in this version. See About for why.</p>
+        </fieldset>
+        <div class="row">
+          <button type="button" id="btn-clear-cache">Clear cached data</button>
+        </div>
+        <p class="small">Keys: T tour/explore · I about · S settings · Esc close</p>
+      </form>
+    </aside>
+
+    <div id="fatal" class="fatal" hidden role="alert"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

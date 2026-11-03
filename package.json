@@ -1,0 +1,37 @@
+{
+  "name": "where-the-water-goes",
+  "version": "0.1.0",
+  "description": "An open-source screensaver that turns public U.S. water data into a living visualization of watersheds.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "data:basemap": "node scripts/build-basemap.mjs",
+    "data:snapshot": "node scripts/build-demo-snapshot.ts",
+    "tauri": "tauri"
+  },
+  "author": "Where the Water Goes contributors",
+  "license": "Apache-2.0",
+  "type": "module",
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.4",
+    "gsap": "^3.15.0",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4",
+    "@types/node": "^26.6.6",
+    "@types/three": "^0.187.0",
+    "puppeteer-core": "^25.16.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  }
+}
