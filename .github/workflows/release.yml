@@ -48,10 +48,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --verify-tag \
-            --title "Where the Water Goes ${TAG#v}" \
-            --notes "Draft release. Review the files, then publish. Install notes: docs/PLATFORMS.md. Signing status: docs/RELEASING.md."
-          echo "id=$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == \"$TAG\") | .id" | head -1)" >> "$GITHUB_OUTPUT"
+          # Reuse an existing release for this tag (e.g. a re-run), else create the draft. Take the
+          # id from the API response itself: the release list can lag behind a just-created draft.
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq ".[] | select(.tag_name == \"$TAG\") | .id" | head -1)
+          if [ -z "$id" ]; then
+            id=$(gh api -X POST "repos/$GITHUB_REPOSITORY/releases" \
+              -f tag_name="$TAG" -F draft=true -f name="Where the Water Goes ${TAG#v}" \
+              -f body="Draft release. Review the files, then publish. Install notes: docs/PLATFORMS.md. Signing status: docs/RELEASING.md." \
+              --jq .id)
+          fi
+          [ -n "$id" ] || { echo "::error::could not create or find the release for $TAG"; exit 1; }
+          echo "release id: $id"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
 
   desktop:
     needs: [check, create-release]
@@ -128,6 +136,11 @@ jobs:
           "SIGN_PFX=$pfx" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
 
       - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: Release id present for tag builds
+        if: env.TAG != '' && needs.create-release.outputs.id == ''
+        run: |
+          echo "::error::tag build without a release id; tauri-action would silently skip uploads"
+          exit 1
       - uses: tauri-apps/tauri-action@v1
         id: tauri
         env:
