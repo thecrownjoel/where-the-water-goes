@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Build the native macOS screensaver bundle: build/macos-saver/Where the Water Goes.saver
 # Needs only the Xcode Command Line Tools (swiftc), not Xcode.
-# The bundle is ad-hoc signed, which is enough to run locally; distribution needs a
-# Developer ID signature and notarization (not done here).
+# Signing: ad-hoc by default, which runs only on the machine that built it. Set
+# CODESIGN_IDENTITY="Developer ID Application: Name (TEAMID)" to sign for distribution, then
+# notarize with scripts/notarize-macos.sh (the release workflow does both when secrets exist).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -28,5 +29,9 @@ cp macos-saver/Info.plist "$OUT/Contents/Info.plist"
 # The web build, without source maps.
 rsync -a --exclude '*.map' dist/ "$OUT/Contents/Resources/web/"
 
-codesign --force --sign - "$OUT"
+if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+  codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$OUT"
+else
+  codesign --force --sign - "$OUT"
+fi
 echo "built: $OUT"

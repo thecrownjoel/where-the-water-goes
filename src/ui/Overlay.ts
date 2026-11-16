@@ -8,6 +8,7 @@ import { siteUrl } from '../data/usgs.ts';
 import { openExternal } from '../platform/index.ts';
 import { escapeHtml, formatValue, modeLabel, observedLabel, relative, utc, valueMeaning } from './format.ts';
 import type { Settings } from './settings.ts';
+import { contributionLine, panelHtml, type BoincStatus } from '../volunteer/boinc.ts';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
@@ -20,6 +21,7 @@ export class Overlay {
   /** Secondary layers (rain, lake levels). null = nothing honest to show. */
   private layers: Partial<Record<LayerId, { snapshot: GaugeSnapshot | null; notice: string | null }>> = {};
   private captionTimer = 0;
+  private boinc: BoincStatus | null = null;
 
   private settings: Settings;
 
@@ -140,6 +142,20 @@ export class Overlay {
     $('#notice').textContent = [this.notice, ...Object.values(this.layers).map((l) => l?.notice)].filter(Boolean).join(' ');
   }
 
+  /** Volunteer computing: refresh the settings panel and the optional status-bar line. */
+  setBoinc(s: BoincStatus) {
+    const panelChanged = JSON.stringify(s) !== JSON.stringify(this.boinc);
+    this.boinc = s;
+    // Don't rebuild the panel while the user might be clicking a link in it.
+    if (panelChanged) $('#boinc-panel').innerHTML = panelHtml(s);
+    this.renderBoincLine();
+  }
+
+  private renderBoincLine() {
+    const line = this.settings.showContribution && this.boinc ? contributionLine(this.boinc) : null;
+    $('#status-boinc').innerHTML = line ? `<span class="dot dot-boinc"></span><span>${escapeHtml(line)}</span>` : '';
+  }
+
   showCard(r: GaugeReading | null) {
     const el = $('#card');
     if (!r) { el.hidden = true; return; }
@@ -202,7 +218,7 @@ export class Overlay {
       <h3>Data sources</h3>
       ${rows}
       <h3>Volunteer computing</h3>
-      <p class="small">Not available in this version. We have not yet identified a research task that genuinely needs distributed volunteer computers and can be independently validated. Rather than invent one, this feature stays off. See docs/VOLUNTEER_COMPUTING.md.</p>`;
+      <p class="small">This app does not run computations itself. We did not find a water-data task that genuinely needs thousands of volunteer computers (see docs/VOLUNTEER_COMPUTING.md), so rather than invent one we point to <strong>BOINC</strong>, the open-source platform behind SETI@home, and suggest climateprediction.net. BOINC computes while your computer is idle; Settings shows its status, read locally and never sent anywhere.</p>`;
   }
 
   private renderSettings() {
@@ -224,6 +240,7 @@ export class Overlay {
     set('showRain', s.showRain);
     set('showLakes', s.showLakes);
     set('showCaptions', s.showCaptions);
+    set('showContribution', s.showContribution);
     form.addEventListener('submit', (e) => e.preventDefault());
     form.addEventListener('input', () => {
       const fd = new FormData(form);
@@ -238,10 +255,12 @@ export class Overlay {
         showRain: fd.get('showRain') === 'on',
         showLakes: fd.get('showLakes') === 'on',
         showCaptions: fd.get('showCaptions') === 'on',
+        showContribution: fd.get('showContribution') === 'on',
       };
       this.settings = next;
       this.onSettings(next);
       this.renderStatus();
+      this.renderBoincLine();
     });
     $('#btn-clear-cache').addEventListener('click', () => this.onClearCache());
   }

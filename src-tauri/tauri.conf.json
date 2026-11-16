@@ -38,7 +38,54 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "macOS": { "minimumSystemVersion": "11.0" },
-    "windows": { "webviewInstallMode": { "type": "downloadBootstrapper" } }
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "signingIdentity": null,
+      "dmg": {
+        "windowSize": {
+          "width": 560,
+          "height": 340
+        },
+        "appPosition": {
+          "x": 150,
+          "y": 170
+        },
+        "applicationFolderPosition": {
+          "x": 410,
+          "y": 170
+        }
+      }
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "perMachine",
+        "installerHooks": "./windows/hooks.nsh",
+        "displayLanguageSelector": false
+      }
+    },
+    "publisher": "Where the Water Goes contributors",
+    "homepage": "https://github.com/thecrownjoel/where-the-water-goes",
+    "longDescription": "A screensaver and desktop visualization of live public U.S. water data: about 8,500 USGS stream gauges, rain gauges and lake and reservoir levels on a 3D globe with rivers and terrain. Every value shows its source and time. Optionally shows what your computer contributes to research through BOINC.",
+    "license": "Apache-2.0",
+    "licenseFile": "../LICENSE",
+    "linux": {
+      "deb": {
+        "depends": [],
+        "files": {
+          "/usr/share/metainfo/org.wherethewatergoes.app.metainfo.xml": "linux/org.wherethewatergoes.app.metainfo.xml"
+        }
+      },
+      "rpm": {
+        "files": {
+          "/usr/share/metainfo/org.wherethewatergoes.app.metainfo.xml": "linux/org.wherethewatergoes.app.metainfo.xml"
+        }
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
   }
 }

@@ -88,6 +88,12 @@ export function armSaverExit(onExit: () => void, deps: SaverExitDeps = {}) {
   for (const ev of ['mousedown', 'keydown', 'touchstart', 'wheel']) target.addEventListener(ev, exit);
 }
 
+/** Local BOINC client status (desktop app only). Untyped: validate with volunteer/boinc.ts. */
+export async function boincStatus(): Promise<unknown> {
+  if (!isTauri()) return { state: 'unsupported' };
+  return invoke<unknown>('boinc_status').catch(() => ({ state: 'unsupported' }));
+}
+
 /** Send a diagnostic line to the native shell (printed only when WTRSHD_DIAG=1). */
 export async function diag(msg: string): Promise<void> {
   if (isTauri()) await invoke('diag', { msg }).catch(() => undefined);

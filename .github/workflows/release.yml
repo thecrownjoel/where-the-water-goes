@@ -1,0 +1,249 @@
+# Release builds for macOS, Windows and Linux.
+#
+# Push a tag like v0.2.0 (it must match "version" in src-tauri/tauri.conf.json) and this builds
+# every installer and screensaver, then attaches them to a DRAFT GitHub Release. Nothing is
+# published until a maintainer reviews the draft and clicks Publish.
+# Run it by hand (workflow_dispatch) to get the same files as workflow artifacts, with no release.
+#
+# Signing is optional and switches on per platform when its secrets exist (see docs/RELEASING.md).
+# Without them the builds are unsigned: macOS Gatekeeper and Windows SmartScreen will warn.
+name: Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Tag matches app version
+        if: env.TAG != ''
+        run: |
+          v=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          [ "v$v" = "$TAG" ] || { echo "::error::tag $TAG does not match tauri.conf.json version $v"; exit 1; }
+      - uses: actions/setup-node@v7
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  # One job creates the draft so the parallel builds don't race to create duplicates.
+  create-release:
+    needs: check
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.draft.outputs.id }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --verify-tag \
+            --title "Where the Water Goes ${TAG#v}" \
+            --notes "Draft release. Review the files, then publish. Install notes: docs/PLATFORMS.md. Signing status: docs/RELEASING.md."
+          echo "id=$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq ".[] | select(.tag_name == \"$TAG\") | .id" | head -1)" >> "$GITHUB_OUTPUT"
+
+  desktop:
+    needs: [check, create-release]
+    # Run on workflow_dispatch too, when create-release is skipped.
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.create-release.result != 'failure' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            args: --target universal-apple-darwin --bundles app,dmg
+          - os: windows-latest
+            # NSIS only: its install hook registers the .scr screensaver (src-tauri/windows/hooks.nsh).
+            args: --bundles nsis
+          - os: ubuntu-22.04
+            # Oldest supported runner: an AppImage runs on distros with this glibc or newer.
+            args: --bundles deb,rpm,appimage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 24, cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - name: Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxss-dev libdbus-1-dev rpm
+      - run: npm ci
+
+      # --- optional signing: export credentials only when the secrets are set ---
+      - name: macOS signing credentials
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ] && [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+            for k in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+              [ -n "${!k}" ] && { echo "$k<<__EOF__"; echo "${!k}"; echo "__EOF__"; } >> "$GITHUB_ENV"
+            done
+            echo "macOS: signing with Developer ID${APPLE_ID:+ and notarizing}"
+          else
+            echo "::warning::macOS build is unsigned (APPLE_CERTIFICATE / APPLE_SIGNING_IDENTITY not set)"
+          fi
+      - name: Windows signing credentials
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CERTIFICATE) {
+            Write-Output "::warning::Windows build is unsigned (WINDOWS_CERTIFICATE not set)"
+            exit 0
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP 'codesign.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $signtool = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' | Sort-Object FullName -Descending | Select-Object -First 1
+          $cfg = @{ bundle = @{ windows = @{ signCommand = @{ cmd = $signtool.FullName; args = @(
+            'sign', '/fd', 'SHA256', '/td', 'SHA256', '/tr', 'http://timestamp.digicert.com',
+            '/f', $pfx, '/p', $env:WINDOWS_CERTIFICATE_PASSWORD, '%1') } } } }
+          $path = Join-Path $env:RUNNER_TEMP 'tauri.sign.json'
+          $cfg | ConvertTo-Json -Depth 6 | Set-Content -Encoding utf8 $path
+          "TAURI_SIGN_CONFIG=--config $path" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "SIGNTOOL=$($signtool.FullName)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "SIGN_PFX=$pfx" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - uses: tauri-apps/tauri-action@v1
+        id: tauri
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Empty on workflow_dispatch: build only, no release upload.
+          releaseId: ${{ needs.create-release.outputs.id }}
+          args: ${{ matrix.args }} ${{ env.TAURI_SIGN_CONFIG }}
+
+      # --- extra screensaver files that Tauri doesn't produce ---
+      - name: Windows .scr
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          node scripts/make-scr.mjs
+          if ($env:SIGN_PFX) {
+            & $env:SIGNTOOL sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f $env:SIGN_PFX /p $env:WINDOWS_CERTIFICATE_PASSWORD dist-scr\WhereTheWaterGoes.scr
+          }
+          if ($env:TAG) { gh release upload $env:TAG dist-scr\WhereTheWaterGoes.scr --clobber }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ matrix.os }}
+          path: |
+            src-tauri/target/**/release/bundle/
+            dist-scr/
+          if-no-files-found: warn
+
+  macos-saver:
+    needs: [check, create-release]
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.create-release.result != 'failure' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Import Developer ID certificate
+        id: cert
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          if [ -z "$APPLE_CERTIFICATE" ]; then echo "::warning::.saver is ad-hoc signed (no APPLE_CERTIFICATE)"; exit 0; fi
+          kc="$RUNNER_TEMP/build.keychain"; pw="$(uuidgen)"
+          security create-keychain -p "$pw" "$kc"
+          security set-keychain-settings -lut 3600 "$kc"
+          security unlock-keychain -p "$pw" "$kc"
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$kc" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$pw" "$kc"
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          echo "signed=1" >> "$GITHUB_OUTPUT"
+      - name: Build .saver
+        env:
+          CODESIGN_IDENTITY: ${{ steps.cert.outputs.signed == '1' && secrets.APPLE_SIGNING_IDENTITY || '' }}
+        run: ./scripts/build-macos-saver.sh
+      - name: Notarize .saver
+        if: steps.cert.outputs.signed == '1'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$APPLE_ID" ]; then echo "::warning::.saver signed but not notarized (no APPLE_ID)"; exit 0; fi
+          ./scripts/notarize-macos.sh "build/macos-saver/Where the Water Goes.saver"
+      - name: Package
+        run: |
+          v=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          cd build/macos-saver
+          ditto -c -k --keepParent "Where the Water Goes.saver" "WhereTheWaterGoes_${v}_macOS.saver.zip"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-saver
+          path: build/macos-saver/*.saver.zip
+      - name: Attach to draft release
+        if: env.TAG != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$TAG" build/macos-saver/*.saver.zip --clobber
+
+  flatpak:
+    needs: desktop
+    if: ${{ !cancelled() && needs.desktop.result == 'success' }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-ubuntu-22.04
+          path: artifacts
+      - name: Stage .deb for the manifest
+        run: cp "$(find artifacts -name '*.deb' | head -1)" packaging/flatpak/app.deb
+      # Also uploads the bundle as a workflow artifact named after it.
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: WhereTheWaterGoes.flatpak
+          manifest-path: packaging/flatpak/org.wherethewatergoes.app.yml
+          cache-key: flatpak-${{ github.sha }}
+          upload-artifact: true
+
+  attach-flatpak:
+    needs: flatpak
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: WhereTheWaterGoes-*
+          path: fp
+          merge-multiple: true
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$TAG" "$(find fp -name '*.flatpak' | head -1)#WhereTheWaterGoes.flatpak" --clobber --repo "$GITHUB_REPOSITORY"

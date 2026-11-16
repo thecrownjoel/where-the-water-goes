@@ -41,12 +41,15 @@
 
 ## Windows
 
-- A `.scr` is a renamed `.exe`. After `npm run tauri build`, run `node scripts/make-scr.mjs`, then right-click the `.scr` → Install.
+- A `.scr` is a renamed `.exe`. The NSIS installer (per-machine) copies the app to `System32\WhereTheWaterGoes.scr` (`src-tauri/windows/hooks.nsh`), so it appears in Screen Saver Settings, and removes it on uninstall. It never selects itself as the active saver. To build one by hand: `npm run tauri build`, then `node scripts/make-scr.mjs`, then right-click the `.scr` → Install.
+- If the app is already running (for example the `--idle` tray), a second launch with `/s` or `/c` is forwarded to it and opens the saver or the settings. Before this fix it opened the explorer.
 - **Untested.** The installer bundles the WebView2 bootstrapper (`webviewInstallMode: downloadBootstrapper`) for the few Windows 10 machines without the runtime.
 - **SmartScreen:** expect warnings until the build is signed with Authenticode.
 - **Preview (`/p`):** a static GDI thumbnail rather than a live WebView2: embedding WebView2 in a foreign child HWND is heavy for a 152×112 box and fragile. See `src-tauri/src/preview.rs`.
 
 ## Linux
+
+- **Packages:** `.deb`, `.rpm`, `.AppImage` and a Flatpak (`packaging/flatpak/`), with AppStream metadata for software centers. See [RELEASING.md](RELEASING.md).
 
 - **Idle detection:** X11 through the `user-idle` crate. On Wayland it works only where the compositor exposes idle information (KDE and wlroots-based compositors). GNOME/Wayland does not support third-party screensavers.
 - **WebKitGTK WebGL:** it can silently fall back to software rendering, and NVIDIA on Wayland can crash ("Error 71"). Workarounds are `WEBKIT_DISABLE_DMABUF_RENDERER=1` or `__NV_DISABLE_EXPLICIT_SYNC=1`. The app detects llvmpipe/SwiftShader and picks low quality automatically.

@@ -17,6 +17,7 @@ An open-source screensaver and desktop visualization that turns public U.S. wate
 - **Teal markers:** USGS lake and reservoir level gauges. All are the same size, because elevation above a datum is not depth. Click one to see its value and datum.
 - **Blue lines:** a cartographic river network. The glints move in the *inferred* downstream direction. They do **not** show measured or modeled flow.
 - **Terrain and sea floor:** NOAA ETOPO1. **Coastlines, lakes, rivers:** Natural Earth.
+- **Volunteer computing:** if [BOINC](https://boinc.berkeley.edu) is running, Settings and the saver show what this computer is contributing to research, such as [climateprediction.net](https://main.cpdn.org/). The app computes nothing itself. See [docs/VOLUNTEER_COMPUTING.md](docs/VOLUNTEER_COMPUTING.md).
 - The status line always separates **mode** (Live / Cached / *Archived snapshot · not live*), **observation time** and **retrieval time**.
 
 ## Run it
@@ -42,12 +43,22 @@ Desktop launch modes (see [docs/PLATFORMS.md](docs/PLATFORMS.md)):
 **Keys:** `T` tour/explore · `I` about and data sources · `S` settings · `Esc` close.
 In explore mode, drag to rotate, scroll to zoom, and click a gauge for details.
 
+## Install
+
+Download from [Releases](https://github.com/thecrownjoel/where-the-water-goes/releases):
+
+- **macOS:** `.dmg` for the app. `.saver.zip` for the screensaver: unzip and double-click.
+- **Windows:** `-setup.exe`. It also installs the screensaver, which you pick in Screen Saver Settings.
+- **Linux:** `.deb`, `.rpm`, `.AppImage` or `.flatpak`. For idle fullscreen, add `where-the-water-goes --idle 10` to your session's autostart.
+
+Builds are unsigned until signing certificates are set up, so expect a Gatekeeper or SmartScreen prompt. Maintainers: see [docs/RELEASING.md](docs/RELEASING.md).
+
 ## Platform status (v0.1)
 
 | | App | Idle fullscreen | Native screensaver |
 |---|---|---|---|
 | macOS | ✅ built and run | ✅ saver windows run; idle trigger untested by hand | ◐ `.saver` builds (`scripts/build-macos-saver.sh`) and renders live data in a test harness; not yet run in System Settings, unsigned |
-| Windows | CI build, untested | implemented, untested | `.scr` via `scripts/make-scr.mjs`; `/p` preview is a static thumbnail (untested) |
+| Windows | CI build, untested | implemented, untested | `.scr` installed into System32 by the NSIS installer (untested); `/p` preview is a static thumbnail (untested) |
 | Linux | CI build, untested | X11 implemented, untested; Wayland partial | ❌ |
 
 ## Rebuilding the bundled data
@@ -64,7 +75,8 @@ node scripts/build-demo-snapshot.ts             # → public/data/demo/usgs-snap
 - [Architecture](docs/ARCHITECTURE.md)
 - [Data sources](docs/DATA_SOURCES.md)
 - [Platforms and screensaver status](docs/PLATFORMS.md)
-- [Volunteer computing (why it's off)](docs/VOLUNTEER_COMPUTING.md)
+- [Volunteer computing (BOINC)](docs/VOLUNTEER_COMPUTING.md)
+- [Releasing and signing](docs/RELEASING.md)
 - [Privacy](docs/PRIVACY.md)
 - [Licensing](docs/LICENSING.md)
 - [Research partner brief](docs/RESEARCH_PARTNER_BRIEF.md)

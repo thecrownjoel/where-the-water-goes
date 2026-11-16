@@ -11,7 +11,8 @@ import { decodeSnapshot } from './data/archive.ts';
 import { LAYERS, type LayerSpec } from './data/layers.ts';
 import type { GaugeSnapshot } from './data/types.ts';
 import { rainFocus } from './viz/focus.ts';
-import { armSaverExit, diag, embeddedHost, exitSaver, isPreviewPane, launchMode, powerState } from './platform/index.ts';
+import { parseStatus } from './volunteer/boinc.ts';
+import { armSaverExit, boincStatus, diag, embeddedHost, exitSaver, isPreviewPane, launchMode, powerState } from './platform/index.ts';
 
 async function loadArchived(layer: LayerSpec = LAYERS.discharge) {
   const res = await fetch(`${import.meta.env.BASE_URL}${layer.archivePath}`);
@@ -156,6 +157,13 @@ async function boot() {
   };
   void checkPower();
   setInterval(() => void checkPower(), 60_000);
+
+  // Volunteer computing: BOINC's local status, polled once a minute (native shell only).
+  if (!previewPane) {
+    const checkBoinc = async () => overlay.setBoinc(parseStatus(await boincStatus().catch(() => null)));
+    void checkBoinc();
+    setInterval(() => void checkBoinc(), 60_000);
+  }
 
   // Inside the native macOS .saver the system host dismisses the screensaver itself.
   if (saver && !embeddedHost()) armSaverExit(() => void exitSaver());

@@ -1,0 +1,47 @@
+# Flatpak manifest. Repackages the .deb that `tauri build` produces.
+#
+# CI (release.yml) copies the freshly built .deb to packaging/flatpak/app.deb and builds a
+# single-file bundle. For a Flathub submission, replace the `path: app.deb` source with the
+# published release URL and its sha256 (Flathub needs downloadable, checksummed sources).
+id: org.wherethewatergoes.app
+runtime: org.gnome.Platform
+runtime-version: '48'     # includes WebKitGTK 4.1, which Tauri 2 needs
+sdk: org.gnome.Sdk
+command: where-the-water-goes
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --device=dri
+  # USGS Water Data API, and BOINC status on 127.0.0.1:31416.
+  - --share=network
+  # Tray icon for --idle mode.
+  - --talk-name=org.kde.StatusNotifierWatcher
+
+modules:
+  - name: where-the-water-goes
+    buildsystem: simple
+    sources:
+      - type: file
+        path: app.deb
+        dest-filename: app.deb
+      - type: file
+        path: ../../src-tauri/linux/org.wherethewatergoes.app.metainfo.xml
+    build-commands:
+      - ar -x app.deb
+      - mkdir -p deb && tar -xf data.tar.* -C deb
+      # The .deb ships exactly one binary in usr/bin.
+      - install -Dm755 deb/usr/bin/* /app/bin/where-the-water-goes
+      - |
+        desktop=$(ls deb/usr/share/applications/*.desktop | head -1)
+        install -Dm644 "$desktop" /app/share/applications/org.wherethewatergoes.app.desktop
+        desktop-file-edit \
+          --set-key=Exec --set-value='where-the-water-goes' \
+          --set-icon=org.wherethewatergoes.app \
+          /app/share/applications/org.wherethewatergoes.app.desktop
+      - |
+        for png in deb/usr/share/icons/hicolor/*/apps/*.png; do
+          size=$(basename "$(dirname "$(dirname "$png")")")
+          install -Dm644 "$png" "/app/share/icons/hicolor/$size/apps/org.wherethewatergoes.app.png"
+        done
+      - install -Dm644 org.wherethewatergoes.app.metainfo.xml /app/share/metainfo/org.wherethewatergoes.app.metainfo.xml

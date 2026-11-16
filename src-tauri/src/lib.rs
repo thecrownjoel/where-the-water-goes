@@ -7,7 +7,9 @@
 //!   * idle detection for the tray "idle fullscreen" mode on macOS/Linux (and Windows)
 //!   * report battery state so the frontend can reduce work on battery
 //!   * open https links in the system browser
+//!   * read-only status from a local BOINC client (volunteer computing is done by BOINC)
 
+mod boinc;
 mod idle;
 mod launch;
 mod preview;
@@ -146,6 +148,14 @@ fn diag(msg: String) {
     }
 }
 
+/// Status of a locally running BOINC client. Read-only; see boinc.rs.
+#[tauri::command]
+async fn boinc_status() -> boinc::Status {
+    tauri::async_runtime::spawn_blocking(boinc::status)
+        .await
+        .unwrap_or(boinc::Status::Unavailable { reason: "status check failed".into() })
+}
+
 #[tauri::command]
 fn open_external(app: AppHandle, url: String) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
@@ -221,11 +231,24 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            let _ = open_explorer(app, "");
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            // A second launch is forwarded here. The OS screensaver host (e.g. Windows running the
+            // .scr with /s while the idle tray is up) must still get the saver, not the explorer.
+            match launch::parse(args.into_iter().skip(1)) {
+                Launch::Saver => {
+                    let _ = open_saver(app);
+                }
+                Launch::Settings => {
+                    let _ = open_explorer(app, "?panel=settings");
+                }
+                Launch::Preview(_) => {}
+                _ => {
+                    let _ = open_explorer(app, "");
+                }
+            }
         }))
         .manage(state.clone())
-        .invoke_handler(tauri::generate_handler![exit_saver, power_state, open_external, diag])
+        .invoke_handler(tauri::generate_handler![exit_saver, power_state, open_external, diag, boinc_status])
         .setup(move |app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(tauri_plugin_log::Builder::default().level(log::LevelFilter::Info).build())?;

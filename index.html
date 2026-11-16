@@ -19,6 +19,7 @@
       <div class="statuses">
         <div id="status" class="status" role="status">Loading data…</div>
         <div id="status-layers" class="status layers" role="status"></div>
+        <div id="status-boinc" class="status boinc" role="status"></div>
       </div>
       <div id="notice" class="notice" role="status"></div>
       <nav class="controls" aria-label="Controls">
@@ -83,10 +84,10 @@
         <label class="check"><input type="checkbox" name="showRain" /> Show rain at gauges</label>
         <label class="check"><input type="checkbox" name="showLakes" /> Show lake &amp; reservoir level gauges</label>
         <label class="check"><input type="checkbox" name="showCaptions" /> Show place captions</label>
-        <fieldset disabled>
-          <legend>Volunteer computing</legend>
-          <label class="check"><input type="checkbox" name="compute" /> Contribute computing (not available yet)</label>
-          <p class="small">Off and unavailable in this version. See About for why.</p>
+        <fieldset class="volunteer">
+          <legend>Volunteer computing · BOINC</legend>
+          <div id="boinc-panel"><p class="small">Checking for BOINC…</p></div>
+          <label class="check"><input type="checkbox" name="showContribution" /> Show this computer's BOINC contribution on screen</label>
         </fieldset>
         <div class="row">
           <button type="button" id="btn-clear-cache">Clear cached data</button>

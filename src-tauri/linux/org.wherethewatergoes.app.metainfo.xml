@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata: used by GNOME Software, KDE Discover and Flathub. -->
+<component type="desktop-application">
+  <id>org.wherethewatergoes.app</id>
+  <name>Where the Water Goes</name>
+  <summary>Live public U.S. water data as a living globe</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <developer id="org.wherethewatergoes">
+    <name>Where the Water Goes contributors</name>
+  </developer>
+  <description>
+    <p>
+      An open-source screensaver and desktop visualization that turns public U.S. water data into a living globe:
+      about 8,500 USGS stream gauges reporting right now, USGS rain gauges recording rain, lake and reservoir levels,
+      and a river network over NOAA terrain. Every value shows where it came from and when it was observed.
+    </p>
+    <p>
+      Run it as an app, or with --idle to start fullscreen after a period of inactivity. If BOINC is running,
+      it can show what your computer is contributing to volunteer research such as climateprediction.net.
+    </p>
+    <p>Independent project, not affiliated with USGS, NOAA or NASA. Not a forecast or warning service.</p>
+  </description>
+  <launchable type="desktop-id">org.wherethewatergoes.app.desktop</launchable>
+  <url type="homepage">https://github.com/thecrownjoel/where-the-water-goes</url>
+  <url type="bugtracker">https://github.com/thecrownjoel/where-the-water-goes/issues</url>
+  <url type="vcs-browser">https://github.com/thecrownjoel/where-the-water-goes</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Mississippi River Basin with live USGS gauges</caption>
+      <image>https://raw.githubusercontent.com/thecrownjoel/where-the-water-goes/main/docs/images/mississippi.png</image>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>Education</category>
+    <category>Science</category>
+  </categories>
+  <keywords>
+    <keyword>screensaver</keyword>
+    <keyword>water</keyword>
+    <keyword>rivers</keyword>
+    <keyword>USGS</keyword>
+    <keyword>BOINC</keyword>
+  </keywords>
+  <content_rating type="oars-1.1" />
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+  <releases>
+    <release version="0.1.0" date="2026-11-15">
+      <description>
+        <p>First release: live USGS streamflow, rain and lake-level gauges; idle fullscreen screensaver mode; BOINC contribution status.</p>
+      </description>
+    </release>
+  </releases>
+</component>

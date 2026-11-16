@@ -41,6 +41,9 @@ body.settled .mark { opacity: 0.35; }
 .status .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
 .dot-rain { background: #9edbff; box-shadow: 0 0 6px #9edbff; }
 .dot-lake { background: #73ffdb; box-shadow: 0 0 6px #73ffdb; }
+.dot-boinc { background: #c9b6ff; box-shadow: 0 0 6px #c9b6ff; }
+.status.boinc { font-size: 11px; }
+.status.boinc:empty { display: none; }
 .status .badge.small { font-size: 9px; padding: 1px 5px; }
 .status .badge.archived { color: #ffcf7a; border-color: rgba(255, 207, 122, 0.5); background: rgba(255, 207, 122, 0.08); }
 .status .sep { color: var(--ink-faint); }
@@ -64,6 +67,7 @@ body.saver { cursor: none; }
 body.saver .controls, body.saver .notice { display: none; }
 body.saver .status { opacity: 0.55; }
 body.saver .status.layers { opacity: 0.45; }
+body.saver .status.boinc { opacity: 0.45; }
 
 .panel {
   position: fixed; top: 16px; right: 16px; bottom: 70px; width: min(460px, calc(100vw - 32px));
@@ -104,7 +108,11 @@ dd ul { margin: 0; padding-left: 16px; }
 .settings label.check { display: flex; gap: 8px; align-items: center; }
 .settings select, .settings input[type="range"] { font: inherit; color: var(--ink); background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); border-radius: 4px; padding: 5px; }
 .settings input[type="range"] { padding: 0; accent-color: var(--water); }
-fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 14px 0; padding: 4px 12px; opacity: 0.7; }
+fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 14px 0; padding: 4px 12px; }
+fieldset:disabled { opacity: 0.7; }
+.volunteer .steps { padding-left: 18px; margin: 6px 0; display: grid; gap: 4px; }
+.volunteer code { font-size: 11px; color: var(--ink); }
+.boinc-projects { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; font-size: 12px; }
 legend { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); padding: 0 4px; }
 .row { display: flex; gap: 8px; margin-top: 12px; }
 

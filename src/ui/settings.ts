@@ -11,6 +11,8 @@ export interface Settings {
   showRain: boolean;
   showLakes: boolean;
   showCaptions: boolean;
+  /** Show this computer's BOINC contribution in the status bar (only when BOINC is running). */
+  showContribution: boolean;
 }
 
 export const DEFAULTS: Settings = {
@@ -24,6 +26,7 @@ export const DEFAULTS: Settings = {
   showRain: true,
   showLakes: true,
   showCaptions: true,
+  showContribution: true,
 };
 
 const KEY = 'wtrshd.settings.v1';
@@ -43,6 +46,7 @@ export function sanitize(raw: unknown): Settings {
   if (typeof r.showRain === 'boolean') s.showRain = r.showRain;
   if (typeof r.showLakes === 'boolean') s.showLakes = r.showLakes;
   if (typeof r.showCaptions === 'boolean') s.showCaptions = r.showCaptions;
+  if (typeof r.showContribution === 'boolean') s.showContribution = r.showContribution;
   return s;
 }
 

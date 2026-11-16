@@ -1,6 +1,31 @@
-# Volunteer computing: why it is off
+# Volunteer computing
 
-The settings show volunteer computing as **off and unavailable** in v0.1. That is deliberate.
+**Decision (2026-11-15): contribute through BOINC rather than run our own workload.**
+
+This app runs no computations itself. Settings → *Volunteer computing · BOINC* helps the user
+install [BOINC](https://boinc.berkeley.edu) (the open-source platform behind SETI@home) and attach
+it to a research project. We suggest [climateprediction.net](https://main.cpdn.org/) (University
+of Oxford climate modelling), and any BOINC project works. BOINC computes while the computer is
+idle, which is when the screensaver is showing.
+
+How it works:
+- The native shell (`src-tauri/src/boinc.rs`) talks to BOINC's GUI RPC on `127.0.0.1:31416`. It uses
+  only read-only requests (`exchange_versions`, `get_simple_gui_info`, `get_cc_status`) that BOINC
+  answers for local clients without a password.
+- It never reads BOINC's password file, attaches or detaches projects, or changes BOINC settings.
+  Nothing is sent off the machine.
+- Settings shows BOINC's state, its projects, running and waiting tasks, and the credit each project
+  has granted this computer. An optional status-bar line, on by default and shown only when BOINC is
+  running an active project, gives a one-line summary in the saver.
+- Credit is BOINC's own measure of validated work. We show it as reported and never convert it into
+  "impact" claims.
+- climateprediction.net currently has the most work for 64-bit Linux. The panel says so, because
+  Mac and Windows computers may get tasks only some of the time.
+- Not available in the browser build or the native macOS `.saver`, which have no native shell. Both
+  show only the visualization.
+
+The rest of this document explains why we didn't build our own distributed task. That reasoning
+still holds.
 
 ## The bar a task must clear
 
@@ -32,4 +57,4 @@ It would follow these rules:
 - **Results** are labelled *experimental*, never official, and published with the code version needed to reproduce them.
 - **Server:** a minimal Cloudflare Worker that accepts small signed result summaries, and nothing else.
 
-Until a task clears the bar, the honest choice is to ship the visualization and the data explorer without it.
+Until a task of our own clears the bar, BOINC is the honest way to contribute.

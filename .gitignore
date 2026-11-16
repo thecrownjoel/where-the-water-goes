@@ -7,3 +7,6 @@ src-tauri/gen/
 .data-raw/
 .claude/settings.local.json
 build/
+packaging/flatpak/app.deb
+.flatpak-builder/
+dist-scr/
