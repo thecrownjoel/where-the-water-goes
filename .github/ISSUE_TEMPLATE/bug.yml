@@ -1,0 +1,31 @@
+name: Bug report
+description: Something is broken, wrong or misleading.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations: { required: true }
+  - type: dropdown
+    id: misleading
+    attributes:
+      label: Does it make data look more certain, more current or more official than it is?
+      description: That's the project's most serious kind of bug.
+      options: ["No", "Yes", "Not sure"]
+    validations: { required: true }
+  - type: input
+    id: platform
+    attributes:
+      label: OS, version and how you run it
+      placeholder: "macOS 15.6, native .saver from v0.2.0 / Windows 11, setup.exe / browser (npm run dev)"
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: textarea
+    id: logs
+    attributes:
+      label: Status line, screenshot or logs
+      description: The status line shows mode and times. For logs, run the app with WTRSHD_DIAG=1.

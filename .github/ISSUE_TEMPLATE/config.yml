@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/thecrownjoel/where-the-water-goes/security/advisories/new
+    about: Report privately, not in a public issue (see SECURITY.md).
+  - name: Flood or weather emergency
+    url: https://www.weather.gov/
+    about: This app is not a forecast or warning service. Use your local National Weather Service office.

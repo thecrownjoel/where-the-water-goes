@@ -2,7 +2,7 @@
 
 ## Cutting a release
 
-1. Bump `version` in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `package.json`, and add a
+1. Bump `version` in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `package.json` and `macos-saver/Info.plist` (`CFBundleShortVersionString`, and increment `CFBundleVersion`), and add a
    `<release>` entry to `src-tauri/linux/org.wherethewatergoes.app.metainfo.xml`.
 2. Commit, then tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
 3. `.github/workflows/release.yml` builds everything and attaches it to a **draft** GitHub Release.

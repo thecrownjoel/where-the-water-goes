@@ -98,11 +98,17 @@ The approved plan, as executed:
 1. ✅ Visual prototype with a bundled basemap and clearly labelled archived data.
 2. ✅ One verified live dataset (USGS discharge) with provenance in the UI.
 3. ✅ Local caching and offline behaviour (live → cached → archived).
-4. ⏸ Volunteer computing: not built, deliberately (see §5).
+4. ✅ Volunteer computing through BOINC (2026-11-15); no workload of our own, deliberately (see §5).
 5. ◐ Platform builds: macOS built and run; Windows/Linux configured in CI but not yet run.
 6. ✅ (2026-11-02) Two more verified USGS layers from the same endpoint: rain recorded at gauges (00045) and lake/reservoir water-surface elevation (62614/62615). Each has its own staleness, refetch and fallback rules; neither falls back to archived data in live mode. The tour adds a stop over the largest cluster of gauges recording rain.
 7. ✅ (2026-11-02) Saver exit-on-input logic is unit-tested; Windows `/p` preview draws a static thumbnail.
-8. Next milestones:
+8. ✅ (2026-11-22) Groundwater and volunteers:
+   - USGS groundwater wells (72019, depth to water) from the same endpoint.
+   - USGS principal aquifers (2003 map) bundled and tinted on the land by rock type; click the land to name the aquifer.
+   - CoCoRaHS volunteer daily rain reports (CC BY 4.0), fetched at most every 6 hours and cached, locations rounded to ~1 km.
+   - BOINC panel: Science United for Mac/Windows computers, and BOINC's pause reason.
+   - Open-source handover: governance, maintainer and testing docs.
+9. Next milestones (see [ROADMAP.md](ROADMAP.md)):
    - federal hydrography (NWM hydrofabric) in place of Natural Earth;
    - a SWOT lake-level layer;
    - ~~a Windows `/p` preview~~ (static thumbnail done, needs a Windows test);

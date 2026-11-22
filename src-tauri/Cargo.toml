@@ -1,6 +1,6 @@
 [package]
 name = "where-the-water-goes"
-version = "0.1.0"
+version = "0.2.0"
 description = "Open-source screensaver visualizing public U.S. water data"
 authors = ["Where the Water Goes contributors"]
 license = "Apache-2.0"

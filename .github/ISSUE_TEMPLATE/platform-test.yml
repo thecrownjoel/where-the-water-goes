@@ -1,0 +1,31 @@
+name: Platform test report
+description: Results from running docs/TESTING.md on a real machine. Failures are just as useful as passes.
+labels: [testing]
+body:
+  - type: input
+    id: os
+    attributes:
+      label: OS and version
+      placeholder: "Windows 11 23H2 / macOS 26.1 / Ubuntu 24.04 (GNOME, Wayland)"
+    validations: { required: true }
+  - type: input
+    id: hardware
+    attributes:
+      label: Hardware and number of displays
+      placeholder: "M2 MacBook Air + 1 external display / Ryzen 5, RTX 3060, 1 display"
+  - type: input
+    id: build
+    attributes:
+      label: Which file you installed
+      placeholder: "WhereTheWaterGoes_0.2.0_x64-setup.exe from the v0.2.0 draft"
+    validations: { required: true }
+  - type: textarea
+    id: results
+    attributes:
+      label: Checklist results
+      description: Paste the relevant section of docs/TESTING.md with boxes ticked, and note anything that failed.
+    validations: { required: true }
+  - type: textarea
+    id: notes
+    attributes:
+      label: Screenshots, logs, anything surprising

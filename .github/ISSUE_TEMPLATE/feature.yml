@@ -1,0 +1,14 @@
+name: Feature request
+description: An idea for the visualization, the screensaver or packaging.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like, and why?
+    validations: { required: true }
+  - type: textarea
+    id: honest
+    attributes:
+      label: Anything it could make people misread?
+      description: Optional. For example, a color scale that implies a comparison the data doesn't support.
