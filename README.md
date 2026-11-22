@@ -95,7 +95,7 @@ The project has one maintainer and would like more. The most useful help, in ord
 3. **Test the Linux packages.**
 4. **Hydrology review** of how groundwater, lake datums and future model data are labelled.
 
-[CONTRIBUTING.md](CONTRIBUTING.md) has the ground rules, [GOVERNANCE.md](GOVERNANCE.md) explains how contributors become maintainers, and [MAINTAINERS.md](MAINTAINERS.md) lists who's who.
+**Anyone can pick this project up.** Get one pull request merged and you can ask for write access; stick around and you can take over as lead ([GOVERNANCE.md](GOVERNANCE.md#taking-over-the-project)). Forks are welcome too. [CONTRIBUTING.md](CONTRIBUTING.md) has the ground rules and [MAINTAINERS.md](MAINTAINERS.md) lists who's who.
 
 ## Documentation
 

@@ -4,8 +4,8 @@
 
 1. Bump `version` in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`, `package.json` and `macos-saver/Info.plist` (`CFBundleShortVersionString`, and increment `CFBundleVersion`), and add a
    `<release>` entry to `src-tauri/linux/org.wherethewatergoes.app.metainfo.xml`.
-2. Commit, then tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
-3. `.github/workflows/release.yml` builds everything and attaches it to a **draft** GitHub Release.
+2. Merge the version bump into `main`, then tag and push: `git tag -a v0.2.0 -m "…" && git push origin v0.2.0`. Only admins can create `v*` tags (a repository ruleset), so this is the lead maintainer's step.
+3. `.github/workflows/release.yml` builds everything and attaches it to a **draft** GitHub Release. Approve the `release` environment when the run asks.
 4. Download the files from the draft, try them on each OS, then press **Publish**. Nothing is public
    before that.
 
@@ -25,7 +25,7 @@ We never select ourselves as the active screensaver. Users choose it in their OS
 ## Signing (optional, per platform)
 
 Without signing the builds still work, but users see warnings. Each platform switches on by itself
-once its repository secrets exist (Settings → Secrets and variables → Actions).
+once its secrets exist in the **`release` environment** (Settings → Environments → release → Environment secrets). Don't add them as repository secrets: anyone with write access can read repository secrets from a workflow on their own branch. The environment only runs from `main` or a `v*` tag and waits for a release approver (the lead maintainer), so a release run pauses until someone clicks **Review deployments → Approve**.
 
 ### macOS: Developer ID + notarization
 

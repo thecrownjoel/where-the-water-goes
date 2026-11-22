@@ -6,6 +6,14 @@ See [GOVERNANCE.md](GOVERNANCE.md) for what maintainers do and how to become one
 |---|---|---|---|
 | Joel Kendall | [thecrownjoel](https://github.com/thecrownjoel) | Lead maintainer | Everything, for now |
 
+## Committers
+
+Anyone with a merged pull request can ask for write access ([GOVERNANCE.md](GOVERNANCE.md#open-commit-access)).
+
+| GitHub | Since |
+|---|---|
+| — | Be the first |
+
 ## Wanted
 
 The project is looking for co-maintainers, especially people who can:

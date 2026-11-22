@@ -1,16 +1,20 @@
 # Governance
 
-Where the Water Goes is a small open-source project with a lead maintainer and room for more
-maintainers. This page explains who decides what, how to become a maintainer, and how the project
-keeps going if people step away.
+Where the Water Goes is a small open-source project with a lead maintainer and room for many
+more. **Anyone can contribute, and anyone who sticks around can take over.** This page explains
+who decides what, how write access and the lead role are handed out, and how the project keeps
+going if people step away.
 
 ## Roles
 
-- **Contributors:** anyone who opens an issue, tests a build, or sends a pull request.
-- **Maintainers** (listed in [MAINTAINERS.md](MAINTAINERS.md)) can merge pull requests, triage
-  issues, and cut releases.
-- **Lead maintainer:** a maintainer who also holds the repository's admin rights and settles
-  disagreements that discussion doesn't.
+- **Contributors:** anyone who opens an issue, tests a build, or sends a pull request. No
+  permission needed.
+- **Committers:** anyone who has had a pull request merged and asked for write access. They can
+  review, label and merge other people's pull requests.
+- **Maintainers** (listed in [MAINTAINERS.md](MAINTAINERS.md)) are committers who also own an area,
+  approve changes to the data-integrity rules, and prepare releases.
+- **Lead maintainer:** holds admin rights, pushes release tags, approves the signing step, and
+  settles disagreements that discussion doesn't.
 
 ## How decisions are made
 
@@ -26,24 +30,51 @@ keeps going if people step away.
   `src-tauri/tauri.conf.json` and `macos-saver/Sources/WhereTheWaterGoesView.swift`, and a line in
   `docs/PRIVACY.md`.
 
+## Open commit access
+
+**Once you've had one pull request merged, you can ask for write access**: say so in the pull
+request or in an issue. The lead maintainer grants it unless there's a concrete reason not to.
+This is deliberate: a project with one maintainer needs more hands, and the guardrails below make
+it safe to hand out keys freely.
+
+**Guardrails** (repository rulesets and a protected environment, so they don't depend on trust):
+
+- Nobody pushes straight to `main`. Every change, including a committer's own, goes through a pull
+  request with passing CI and an approval from someone else.
+- `main` can't be force-pushed or deleted.
+- Only the lead maintainer can create release tags (`v*`).
+- Signing secrets live in the `release` environment, which runs only from `main` or a release tag
+  and waits for the lead maintainer's approval. Write access alone can't reach them.
+- Releases are built as drafts; nothing is public until someone tests the files and publishes.
+
+Committers who are away for six months lose write access quietly and get it back by asking.
+
 ## Becoming a maintainer
 
-There's no fixed quota. Typical paths:
+Typical paths: a few merged pull requests that show care for the ground rules, or verified
+platform testing (for example a full [TESTING.md](docs/TESTING.md) pass on Windows or Linux) plus a
+fix or two. Any committer can nominate someone in an issue; the lead maintainer confirms.
+Maintainers who are away for six months move to "emeritus" and can come back by asking.
 
-- a few merged pull requests that show care for the ground rules, or
-- verified platform testing (for example a full [TESTING.md](docs/TESTING.md) pass on Windows or
-  Linux) plus a fix or two.
+## Taking over the project
 
-Any maintainer can nominate someone in an issue; the lead maintainer confirms. New maintainers get
-write access and a line in MAINTAINERS.md. Maintainers who are away for six months move to
-"emeritus" and can come back by asking.
+The lead role is meant to be handed on, not held forever.
+
+- **Want to lead it?** Open an issue titled "Adoption: <your name>" saying what you'd like to do.
+  After a few months of active maintenance, the lead maintainer hands over admin rights, release
+  tagging and the signing environment using the handover checklist below.
+- **Forks are always fine.** The code is Apache-2.0: anyone may fork the project and continue it
+  without asking. If you publish builds of a fork, please use a different name, app ID
+  (`org.wherethewatergoes.app`) and screensaver file name so users' installs don't collide, and
+  keep the data credits in `NOTICE`.
 
 ## Releases
 
-Any maintainer can cut a release with [docs/RELEASING.md](docs/RELEASING.md). Releases are built by
-CI as drafts; a maintainer tests the files and publishes. Signing identities (Apple Developer ID,
-Windows code-signing certificate) belong to whoever pays for them; they are stored only as GitHub
-Actions secrets and are never committed.
+Maintainers prepare a release (version bump pull request, TESTING.md results); the lead maintainer
+pushes the tag and approves the signing step ([docs/RELEASING.md](docs/RELEASING.md)). Releases are
+built by CI as drafts; someone tests the files and publishes. Signing identities (Apple Developer
+ID, Windows code-signing certificate) belong to whoever pays for them; they are stored only as
+secrets of the `release` environment and are never committed.
 
 ## Continuity
 
@@ -65,7 +96,8 @@ So the project doesn't depend on one person:
 | What | Status | Notes |
 |---|---|---|
 | GitHub repository | `thecrownjoel/where-the-water-goes` | Admin: lead maintainer |
-| Actions secrets for signing | none yet | See RELEASING.md; each platform switches on when its secrets exist |
+| `release` environment | created; required reviewer: lead maintainer; runs from `main` and `v*` tags only | Signing secrets go here (none yet). See RELEASING.md |
+| Rulesets | `main`: pull request + 1 approval + CI, no force-push or deletion; `v*` tags: admins only | Admins can bypass, for emergencies |
 | Apple Developer Program | not enrolled | Needed for notarized macOS builds ($99/year) |
 | Windows code-signing certificate | none | OV or Azure Trusted Signing |
 | `wherethewatergoes.org` domain | not owned | The app ID `org.wherethewatergoes.app` assumes it; Flathub requires a domain or code host you control (see RELEASING.md) |

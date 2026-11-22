@@ -2,7 +2,7 @@
 
 Thanks for helping. The project has one non-negotiable rule: **never make data look more certain, more current or more official than it is.**
 
-**Where to start:** [docs/ROADMAP.md](docs/ROADMAP.md) lists open work in priority order. The most valuable help right now needs no code: run [docs/TESTING.md](docs/TESTING.md) on Windows, Linux or macOS and file a *Platform test report*. [GOVERNANCE.md](GOVERNANCE.md) explains how decisions are made and how contributors become maintainers. Everyone follows the [code of conduct](CODE_OF_CONDUCT.md).
+**Where to start:** [docs/ROADMAP.md](docs/ROADMAP.md) lists open work in priority order. The most valuable help right now needs no code: run [docs/TESTING.md](docs/TESTING.md) on Windows, Linux or macOS and file a *Platform test report*. **Had a pull request merged? Ask for write access**; [GOVERNANCE.md](GOVERNANCE.md#open-commit-access) explains why that's safe, how contributors become maintainers, and how someone can take over the project. Everyone follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Ground rules
 

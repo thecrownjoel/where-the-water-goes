@@ -65,6 +65,9 @@ jobs:
     needs: [check, create-release]
     # Run on workflow_dispatch too, when create-release is skipped.
     if: ${{ !cancelled() && needs.check.result == 'success' && needs.create-release.result != 'failure' }}
+    # Signing secrets live in the protected "release" environment: it only runs from main or a
+    # v* tag and waits for a release approver, so write access alone can't reach the keys.
+    environment: release
     strategy:
       fail-fast: false
       matrix:
@@ -174,6 +177,7 @@ jobs:
   macos-saver:
     needs: [check, create-release]
     if: ${{ !cancelled() && needs.check.result == 'success' && needs.create-release.result != 'failure' }}
+    environment: release
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
