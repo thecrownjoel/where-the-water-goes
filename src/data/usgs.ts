@@ -19,20 +19,27 @@ export const LATEST_PROPERTIES = [
 
 export interface ParameterSpec {
   code: ParameterCode;
-  /** USGS parameter description, verbatim from the parameter-codes collection (2026-11-02). */
+  /** Who publishes values of this kind. */
+  agency: 'USGS' | 'CoCoRaHS';
+  /** USGS parameter description, verbatim from the parameter-codes collection (2026-11-02; 72019 on 2026-11-22). */
   description: string;
   /** unit_of_measure strings accepted from the API for this parameter. */
   apiUnits: string[];
   unit: Unit;
   /** Physically impossible values are rejected, not clamped. */
   min?: number;
+  max?: number;
 }
 
 export const PARAMETERS: Record<ParameterCode, ParameterSpec> = {
-  '00060': { code: '00060', description: 'Discharge, cubic feet per second', apiUnits: ['ft^3/s'], unit: 'ft3/s' },
-  '00045': { code: '00045', description: 'Precipitation, total, inches', apiUnits: ['in'], unit: 'in', min: 0 },
-  '62614': { code: '62614', description: 'Lake or reservoir water surface elevation above NGVD 1929, feet', apiUnits: ['ft'], unit: 'ft' },
-  '62615': { code: '62615', description: 'Lake or reservoir water surface elevation above NAVD 1988, feet', apiUnits: ['ft'], unit: 'ft' },
+  '00060': { code: '00060', agency: 'USGS', description: 'Discharge, cubic feet per second', apiUnits: ['ft^3/s'], unit: 'ft3/s' },
+  '00045': { code: '00045', agency: 'USGS', description: 'Precipitation, total, inches', apiUnits: ['in'], unit: 'in', min: 0 },
+  '62614': { code: '62614', agency: 'USGS', description: 'Lake or reservoir water surface elevation above NGVD 1929, feet', apiUnits: ['ft'], unit: 'ft' },
+  '62615': { code: '62615', agency: 'USGS', description: 'Lake or reservoir water surface elevation above NAVD 1988, feet', apiUnits: ['ft'], unit: 'ft' },
+  // Negative depths are valid: the water level is above land surface (flowing/artesian wells).
+  '72019': { code: '72019', agency: 'USGS', description: 'Depth to water level, feet below land surface', apiUnits: ['ft'], unit: 'ft' },
+  // Not a USGS parameter; parsed by cocorahs.ts. 50 in is above the U.S. 24-hour record.
+  'CCR-PRCP24': { code: 'CCR-PRCP24', agency: 'CoCoRaHS', description: 'Precipitation, 24-hour total, inches (CoCoRaHS volunteer report)', apiUnits: [], unit: 'in', min: 0, max: 50 },
 };
 
 /** Build the single request that returns the latest value of the given parameters at every site. */
@@ -100,7 +107,7 @@ export function parseLatest(body: unknown, opts: ParseOptions = {}): ParseResult
     const p = f.properties;
     // Older saved responses omit parameter_code; that is only unambiguous for a single-code request.
     const pc = p.parameter_code ?? (codes.length === 1 ? codes[0] : undefined);
-    if (typeof pc !== 'string' || !codes.includes(pc as ParameterCode)) { reject(stats, 'unexpected parameter'); continue; }
+    if (typeof pc !== 'string' || !codes.includes(pc as ParameterCode) || PARAMETERS[pc as ParameterCode]?.agency !== 'USGS') { reject(stats, 'unexpected parameter'); continue; }
     const spec = PARAMETERS[pc as ParameterCode];
     const g = f.geometry;
     if (!isObject(g) || g.type !== 'Point' || !Array.isArray(g.coordinates)) { reject(stats, 'missing location'); continue; }
@@ -114,7 +121,7 @@ export function parseLatest(body: unknown, opts: ParseOptions = {}): ParseResult
     if (typeof raw !== 'string' && typeof raw !== 'number') { reject(stats, 'missing value'); continue; }
     const value = typeof raw === 'number' ? raw : raw.trim() === '' ? NaN : Number(raw);
     if (!Number.isFinite(value)) { reject(stats, 'non-numeric value'); continue; }
-    if (spec.min !== undefined && value < spec.min) { reject(stats, 'physically impossible value'); continue; }
+    if ((spec.min !== undefined && value < spec.min) || (spec.max !== undefined && value > spec.max)) { reject(stats, 'physically impossible value'); continue; }
     if (typeof p.time !== 'string') { reject(stats, 'missing time'); continue; }
     const t = Date.parse(p.time);
     if (!Number.isFinite(t)) { reject(stats, 'invalid time'); continue; }

@@ -41,7 +41,9 @@ body.settled .mark { opacity: 0.35; }
 .status .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
 .dot-rain { background: #9edbff; box-shadow: 0 0 6px #9edbff; }
 .dot-lake { background: #73ffdb; box-shadow: 0 0 6px #73ffdb; }
-.dot-boinc { background: #c9b6ff; box-shadow: 0 0 6px #c9b6ff; }
+.dot-boinc { background: #ffd9a8; box-shadow: 0 0 6px #ffd9a8; }
+.dot-well { background: #b48cff; box-shadow: 0 0 6px #b48cff; border-radius: 1px; transform: rotate(45deg) scale(0.85); }
+.dot-daily { background: #9ecbff; box-shadow: 0 0 6px #9ecbff; opacity: 0.8; }
 .status.boinc { font-size: 11px; }
 .status.boinc:empty { display: none; }
 .status .badge.small { font-size: 9px; padding: 1px 5px; }
@@ -103,6 +105,13 @@ dd ul { margin: 0; padding-left: 16px; }
 .sw-rain { background: radial-gradient(circle, transparent 38%, #9edbff 42%, transparent 52%, transparent 70%, rgba(158, 219, 255, 0.5) 74%, transparent 80%); }
 .sw-lakelevel { background: radial-gradient(circle, #b9fff0 18%, transparent 30%, transparent 52%, #73ffdb 58%, transparent 66%); }
 .sw-lake { border-radius: 3px; background: #0e3b4f; box-shadow: 0 0 6px #2aa7c9; }
+.sw-well { border-radius: 1px; width: 9px; height: 9px; margin: 4px 0 0 2px; transform: rotate(45deg); border: 1.5px solid #c9a8ff; background: radial-gradient(circle, #efe4ff 22%, transparent 32%); box-sizing: border-box; }
+.sw-daily { background: radial-gradient(circle, #d6e9ff 18%, rgba(158, 203, 255, 0.45) 40%, rgba(158, 203, 255, 0.2) 62%, transparent 70%); }
+.sw-aquifer { border-radius: 3px; background: linear-gradient(135deg, #dbbd5c 0 33%, #6bad66 33% 66%, #b37390 66%); opacity: 0.85; }
+.sw-inline { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.rocks { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; }
+.rock { white-space: nowrap; font-size: 11px; }
+.card .v.small-v { font-size: 17px; line-height: 1.25; }
 
 .settings label { display: grid; gap: 4px; margin: 10px 0; font-size: 12px; color: var(--ink-dim); }
 .settings label.check { display: flex; gap: 8px; align-items: center; }

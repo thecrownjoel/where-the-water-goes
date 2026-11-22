@@ -1,7 +1,7 @@
 // Renderer, post-processing, frame pacing. Owns the layers; knows nothing about data sources.
 
 import {
-  ACESFilmicToneMapping, LineBasicMaterial, LineSegments, Color, PerspectiveCamera, Scene as ThreeScene, SRGBColorSpace, Vector2, Vector3,
+  ACESFilmicToneMapping, LineBasicMaterial, LineSegments, Color, PerspectiveCamera, Raycaster, Scene as ThreeScene, SRGBColorSpace, Vector2, Vector3,
   WebGLRenderer,
 } from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -29,6 +29,9 @@ export interface VisualSettings {
   showGauges: boolean;
   showRain: boolean;
   showLakes: boolean;
+  showGroundwater: boolean;
+  showCocorahs: boolean;
+  showAquifers: boolean;
 }
 
 /** Detect software rendering (llvmpipe, SwiftShader…) and recommend low quality. */
@@ -53,6 +56,8 @@ export class Scene {
   readonly gauges: Gauges;
   readonly rain: Gauges;
   readonly lakes: Gauges;
+  readonly wells: Gauges;
+  readonly daily: Gauges;
   readonly director: Director;
   controls: OrbitControls | null = null;
   private scene = new ThreeScene();
@@ -85,9 +90,11 @@ export class Scene {
     this.gauges = new Gauges('discharge');
     this.rain = new Gauges('rain');
     this.lakes = new Gauges('lake');
+    this.wells = new Gauges('well');
+    this.daily = new Gauges('daily');
     this.coast = createCoastlines(base);
     this.scene.add(this.stars, this.globe.mesh, this.globe.atmosphere, this.coast, this.rivers.mesh,
-      this.gauges.mesh, this.lakes.mesh, this.rain.mesh);
+      this.daily.mesh, this.gauges.mesh, this.lakes.mesh, this.wells.mesh, this.rain.mesh);
 
     this.director = new Director();
     applyCameraState(this.camera, this.director.state);
@@ -119,13 +126,31 @@ export class Scene {
     this.gauges.visible = s.showGauges;
     this.rain.visible = s.showRain;
     this.lakes.visible = s.showLakes;
+    this.wells.visible = s.showGroundwater;
+    this.daily.visible = s.showCocorahs;
+    this.globe.aquifers = s.showAquifers ? 1 : 0;
     this.bloom.enabled = s.quality === 'high';
     this.bloom.strength = 0.2 + 0.35 * k;
     this.resize();
   }
 
   get markLayers(): Gauges[] {
-    return [this.gauges, this.rain, this.lakes];
+    return [this.gauges, this.rain, this.lakes, this.wells, this.daily];
+  }
+
+  /** Longitude/latitude of the globe surface under a screen point (CSS px), or null for space. */
+  pickLonLat(x: number, y: number): { lon: number; lat: number } | null {
+    const ray = new Raycaster();
+    ray.setFromCamera(new Vector2((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1), this.camera);
+    const o = ray.ray.origin, d = ray.ray.direction;
+    // Unit sphere at the origin: |o + t d| = 1.
+    const b = o.dot(d), c = o.lengthSq() - 1, disc = b * b - c;
+    if (disc < 0) return null;
+    const t = -b - Math.sqrt(disc);
+    if (t < 0) return null;
+    const p = o.clone().addScaledVector(d, t);
+    // Inverse of lonLatToVec3 (coords.ts): lat from y, lon from atan2(x, z).
+    return { lat: (Math.asin(Math.max(-1, Math.min(1, p.y))) * 180) / Math.PI, lon: (Math.atan2(p.x, p.z) * 180) / Math.PI };
   }
 
   /** Nearest visible mark of any layer under a screen point. */

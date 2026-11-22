@@ -47,11 +47,15 @@ export function formatDischarge(v: number): string {
   return `${s} ft³/s`;
 }
 
+const ft = (v: number) => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 /** A reading's value with its unit and, for elevations, its vertical datum. */
-export function formatValue(r: Pick<GaugeReading, 'param' | 'value'>): string {
+export function formatValue(r: Pick<GaugeReading, 'param' | 'value'> & { qualifiers?: string[] }): string {
   switch (r.param) {
     case '00060': return formatDischarge(r.value);
     case '00045': return `${r.value.toFixed(2)} in`;
+    case '72019': return r.value >= 0 ? `${ft(r.value)} ft below land surface` : `${ft(-r.value)} ft above land surface`;
+    case 'CCR-PRCP24': return r.qualifiers?.includes('TRACE') ? 'Trace (less than 0.01 in)' : `${r.value.toFixed(2)} in in 24 h`;
     case '62614': return `${r.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ft (NGVD 29)`;
     case '62615': return `${r.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ft (NAVD 88)`;
   }
@@ -64,6 +68,8 @@ export function valueMeaning(param: GaugeReading['param']): string {
     case '00045': return 'Precipitation total for the gauge\'s latest reporting interval (interval length varies by gauge; most report every 5–15 min)';
     case '62614':
     case '62615': return 'Water-surface elevation above the stated vertical datum — not depth, and not comparable between lakes';
+    case '72019': return 'Depth from land surface down to the water level in this well (negative: water stands above land surface, as in a flowing well). Comparable between wells; it is not the thickness or size of the aquifer';
+    case 'CCR-PRCP24': return 'Rain and melted snow in the 24 hours before the volunteer\'s daily reading (usually around 7 AM local time), from a standard manual rain gauge';
   }
 }
 

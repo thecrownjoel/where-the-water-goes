@@ -8,9 +8,11 @@ import { loadSettings, saveSettings, prefersReducedMotion, type Settings } from 
 import { createCache, purgeExpired } from './data/cache.ts';
 import { loadLayer } from './data/provider.ts';
 import { decodeSnapshot } from './data/archive.ts';
-import { LAYERS, type LayerSpec } from './data/layers.ts';
+import { LAYERS, SECONDARY_LAYER_IDS, type LayerSpec, type SecondaryLayerId } from './data/layers.ts';
 import type { GaugeSnapshot } from './data/types.ts';
 import { rainFocus } from './viz/focus.ts';
+import { AquiferIndex } from './geo/aquifers.ts';
+import type { Stop } from './viz/Director.ts';
 import { parseStatus } from './volunteer/boinc.ts';
 import { armSaverExit, boincStatus, diag, embeddedHost, exitSaver, isPreviewPane, launchMode, powerState } from './platform/index.ts';
 
@@ -44,6 +46,10 @@ async function boot() {
     showGauges: s.showGauges,
     showRain: s.showRain,
     showLakes: s.showLakes,
+    showGroundwater: s.showGroundwater,
+    showCocorahs: s.showCocorahs,
+    // The aquifer tint needs the bundled map; without it the toggle does nothing.
+    showAquifers: s.showAquifers && base.aquifers !== null,
   });
   const scene = new Scene(canvas, base, visual(settings));
   autoQuality = detectQuality(scene.renderer);
@@ -58,16 +64,23 @@ async function boot() {
   if (import.meta.env.DEV) (window as unknown as { __wtrshd: unknown }).__wtrshd = { scene };
   scene.startLoop();
   document.body.classList.add('ready');
+  const aquifers = base.aquifers ? new AquiferIndex(base.aquifers) : null;
+  overlay.setAquiferCount(aquifers?.aquiferCount ?? 0);
 
   overlay.onToggleMode = () => {
     mode = mode === 'tour' ? 'explore' : 'tour';
     scene.setMode(mode);
     overlay.setModeLabel(mode);
-    if (mode === 'explore') overlay.caption('Explore · drag to rotate · scroll to zoom · click a gauge');
+    if (mode === 'explore') overlay.caption('Explore · drag to rotate · scroll to zoom · click a gauge, or the land to name its aquifer');
   };
   canvas.addEventListener('click', (e) => {
     if (mode !== 'explore') return;
-    overlay.showCard(scene.pick(e.clientX, e.clientY));
+    const hit = scene.pick(e.clientX, e.clientY);
+    if (hit || !aquifers || !settings.showAquifers) { overlay.showCard(hit); return; }
+    // No gauge under the pointer: name the principal aquifer there, if the click was on land.
+    const ll = scene.pickLonLat(e.clientX, e.clientY);
+    if (ll) overlay.showAquiferCard(aquifers.at(ll.lon, ll.lat), ll.lon, ll.lat);
+    else overlay.showCard(null);
   });
   matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => {
     scene.applySettings(visual(settings));
@@ -78,13 +91,28 @@ async function boot() {
   const cache = createCache();
   await purgeExpired(cache, LAYERS.discharge.maxCacheAgeMs).catch(() => 0);
   const providerOpts = { cache, loadArchived };
-  // A tour stop over the largest cluster of gauges currently recording rain, if any.
+  // Data-driven tour stops: the largest cluster of gauges recording rain now (if any), and the
+  // High Plains aquifer when the aquifer layer is on. Captions are place names, never statistics.
+  let rainStop: Stop | null = null;
+  const updateDynamicStops = () => {
+    const stops: Stop[] = [];
+    if (rainStop) stops.push(rainStop);
+    if (aquifers && settings.showAquifers) {
+      stops.push({ title: 'High Plains aquifer, beneath the Great Plains', lat: 39, lon: -101.5, alt: 0.5, tilt: 0.5, hold: 16 });
+    }
+    scene.director.setDynamicStops(stops);
+  };
   const updateRainStop = (snap: GaugeSnapshot | null) => {
     const f = snap && settings.showRain ? rainFocus(snap.readings) : null;
-    scene.director.setDynamicStops(f ? [{
+    rainStop = f ? {
       title: snap!.mode === 'archived' ? 'Rain at USGS gauges · archived snapshot' : 'Rain recorded at USGS gauges',
       lat: f.lat, lon: f.lon, alt: 0.32, tilt: 0.6, hold: 14,
-    }] : []);
+    } : null;
+    updateDynamicStops();
+  };
+  updateDynamicStops();
+  const marks: Record<SecondaryLayerId, typeof scene.rain> = {
+    precipitation: scene.rain, 'lake-level': scene.lakes, groundwater: scene.wells, cocorahs: scene.daily,
   };
   const refreshDischarge = async () => {
     const { snapshot, notice } = await loadLayer(LAYERS.discharge, settings.dataMode, providerOpts);
@@ -93,9 +121,9 @@ async function boot() {
     scene.gauges.setReadings(snapshot.readings);
     overlay.setSnapshot(snapshot, notice);
   };
-  const refreshSecondary = async (id: 'precipitation' | 'lake-level') => {
+  const refreshSecondary = async (id: SecondaryLayerId) => {
     const { snapshot, notice } = await loadLayer(LAYERS[id], settings.dataMode, providerOpts);
-    (id === 'precipitation' ? scene.rain : scene.lakes).setReadings(snapshot?.readings ?? []);
+    marks[id].setReadings(snapshot?.readings ?? []);
     overlay.setLayer(id, snapshot, notice);
     if (id === 'precipitation') updateRainStop(snapshot);
   };
@@ -105,24 +133,23 @@ async function boot() {
   };
   const refresh = () => Promise.all([
     refreshDischarge().catch(report('discharge')),
-    refreshSecondary('precipitation').catch(report('precipitation')),
-    refreshSecondary('lake-level').catch(report('lake-level')),
+    ...SECONDARY_LAYER_IDS.map((id) => refreshSecondary(id).catch(report(id))),
   ]);
   await refresh();
   const f0 = scene.frames, t0 = scene.ticks;
   setTimeout(() => {
     void diag(`mode=${launch} renderer="${rendererName(scene.renderer)}" quality=${visual(settings).quality} ` +
-      `fps≈${((scene.frames - f0) / 5).toFixed(1)} raf/s≈${((scene.ticks - t0) / 5).toFixed(1)} hidden=${document.hidden} rivers=${scene.rivers.segmentCount} rain=${scene.rain.count} lakes=${scene.lakes.count} ${document.querySelector('#status')?.textContent ?? ''}`);
+      `fps≈${((scene.frames - f0) / 5).toFixed(1)} raf/s≈${((scene.ticks - t0) / 5).toFixed(1)} hidden=${document.hidden} rivers=${scene.rivers.segmentCount} rain=${scene.rain.count} lakes=${scene.lakes.count} wells=${scene.wells.count} cocorahs=${scene.daily.count} aquifers=${aquifers?.aquiferCount ?? 0} ${document.querySelector('#status')?.textContent ?? ''}`);
   }, 5000);
   // Each layer refreshes on its own cadence; the provider serves cache until refetchMs passes.
   setInterval(() => void refreshDischarge().catch(report('discharge')), LAYERS.discharge.refetchMs);
-  setInterval(() => void refreshSecondary('precipitation').catch(report('precipitation')), LAYERS.precipitation.refetchMs);
-  setInterval(() => void refreshSecondary('lake-level').catch(report('lake-level')), LAYERS['lake-level'].refetchMs);
+  for (const id of SECONDARY_LAYER_IDS) setInterval(() => void refreshSecondary(id).catch(report(id)), LAYERS[id].refetchMs);
   setInterval(() => overlay.renderStatus(), 60_000);
 
   overlay.onSettings = (s) => {
     const dataChanged = s.dataMode !== settings.dataMode;
     const rainToggled = s.showRain !== settings.showRain;
+    const aquifersToggled = s.showAquifers !== settings.showAquifers;
     const motionChanged = prefersReducedMotion(s) !== prefersReducedMotion(settings);
     settings = s;
     saveSettings(s);
@@ -130,6 +157,7 @@ async function boot() {
     if (motionChanged && mode === 'tour') scene.setMode('tour');
     if (dataChanged) void refresh();
     else if (rainToggled) void refreshSecondary('precipitation').catch(report('precipitation'));
+    if (aquifersToggled) updateDynamicStops();
   };
   overlay.onClearCache = async () => {
     await cache.clear();
@@ -137,9 +165,9 @@ async function boot() {
     overlay.setSnapshot(archived, 'Cache cleared. Showing archived snapshot until the next refresh.');
     scene.gauges.setReadings(archived.readings);
     // Secondary layers have no archive fallback in live mode; hide them until the next refresh.
-    for (const id of ['precipitation', 'lake-level'] as const) {
+    for (const id of SECONDARY_LAYER_IDS) {
       if (settings.dataMode === 'demo') { void refreshSecondary(id); continue; }
-      (id === 'precipitation' ? scene.rain : scene.lakes).setReadings([]);
+      marks[id].setReadings([]);
       overlay.setLayer(id, null, null);
     }
   };

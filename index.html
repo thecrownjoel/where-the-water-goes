@@ -6,10 +6,10 @@
     <meta name="color-scheme" content="dark" />
     <title>Where the Water Goes</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="description" content="An open-source visualization of U.S. rivers, lakes and stream gauges from public government data." />
+    <meta name="description" content="An open-source visualization of U.S. rivers, lakes, groundwater and rain from public data and volunteer observers." />
   </head>
   <body>
-    <canvas id="globe" aria-label="Animated globe showing rivers, lakes and USGS stream gauges"></canvas>
+    <canvas id="globe" aria-label="Animated globe showing rivers, lakes, aquifers, groundwater wells, rain reports and USGS stream gauges"></canvas>
     <div id="fade" aria-hidden="true"></div>
 
     <header class="mark" aria-hidden="true">Where the Water Goes</header>
@@ -47,7 +47,7 @@
       <form id="settings-form" class="panel-body settings">
         <label>Data
           <select name="dataMode">
-            <option value="auto">Live from USGS (falls back to cache)</option>
+            <option value="auto">Live from USGS &amp; CoCoRaHS (falls back to cache)</option>
             <option value="demo">Archived snapshot (offline demo)</option>
           </select>
         </label>
@@ -83,7 +83,14 @@
         <label class="check"><input type="checkbox" name="showGauges" /> Show stream gauges</label>
         <label class="check"><input type="checkbox" name="showRain" /> Show rain at gauges</label>
         <label class="check"><input type="checkbox" name="showLakes" /> Show lake &amp; reservoir level gauges</label>
+        <label class="check"><input type="checkbox" name="showGroundwater" /> Show groundwater wells (depth to water)</label>
+        <label class="check"><input type="checkbox" name="showAquifers" /> Show principal aquifers (rock type)</label>
+        <label class="check"><input type="checkbox" name="showCocorahs" /> Show volunteer rain reports (CoCoRaHS, last 24 h)</label>
         <label class="check"><input type="checkbox" name="showCaptions" /> Show place captions</label>
+        <fieldset class="volunteer">
+          <legend>Volunteer rain observers · CoCoRaHS</legend>
+          <div id="cocorahs-panel"></div>
+        </fieldset>
         <fieldset class="volunteer">
           <legend>Volunteer computing · BOINC</legend>
           <div id="boinc-panel"><p class="small">Checking for BOINC…</p></div>

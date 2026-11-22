@@ -3,9 +3,9 @@
 // A ScreenSaverView hosting a WKWebView that runs the same web build as the desktop app.
 // The web files are bundled inside the .saver and served through a custom URL scheme
 // (wtrshd://app/...) rather than file:// URLs, so fetch() of bundled data works and the page
-// has a stable origin for CORS requests to USGS. Nothing is downloaded and executed: only the
-// bundled files are served, and the Content-Security-Policy limits network access to the
-// USGS API, matching the Tauri build.
+// has a stable origin for CORS requests to USGS and CoCoRaHS. Nothing is downloaded and
+// executed: only the bundled files are served, and the Content-Security-Policy limits network
+// access to the USGS API and the CoCoRaHS export, matching the Tauri build.
 //
 // Spike status: builds with the Command Line Tools (no Xcode) and renders in the test harness.
 // Not yet signed or notarized, and not yet run inside System Settings on every macOS version.
@@ -19,7 +19,7 @@ private let contentSecurityPolicy = [
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
-    "connect-src 'self' https://api.waterdata.usgs.gov",
+    "connect-src 'self' https://api.waterdata.usgs.gov https://data.cocorahs.org",
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'none'",
@@ -127,6 +127,15 @@ public final class WhereTheWaterGoesView: ScreenSaverView {
     public override func startAnimation() {
         super.startAnimation()
         if webView == nil { makeWebView() }
+    }
+
+    /// Tear the page down when the host stops the saver, so WebGL never keeps rendering behind
+    /// the desktop if the process lingers (and the willstop notification never comes).
+    public override func stopAnimation() {
+        super.stopAnimation()
+        webView?.removeFromSuperview()
+        webView = nil
+        schemeHandler = nil
     }
 
     public override func animateOneFrame() {}

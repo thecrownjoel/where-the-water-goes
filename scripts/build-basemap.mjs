@@ -166,5 +166,13 @@ const manifest = {
   },
   outputs,
 };
-fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+// Keep entries written by other generators (scripts/build-aquifers.mjs).
+const manifestPath = path.join(outDir, 'manifest.json');
+if (fs.existsSync(manifestPath)) {
+  const prev = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const mine = new Set(outputs.map((o) => o.file));
+  for (const [k, v] of Object.entries(prev.sources ?? {})) if (!(k in manifest.sources)) manifest.sources[k] = v;
+  for (const o of prev.outputs ?? []) if (!mine.has(o.file)) outputs.push(o);
+}
+fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 console.log('wrote manifest.json');

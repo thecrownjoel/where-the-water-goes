@@ -3,10 +3,22 @@
 **Decision (2026-11-15): contribute through BOINC rather than run our own workload.**
 
 This app runs no computations itself. Settings → *Volunteer computing · BOINC* helps the user
-install [BOINC](https://boinc.berkeley.edu) (the open-source platform behind SETI@home) and attach
-it to a research project. We suggest [climateprediction.net](https://main.cpdn.org/) (University
-of Oxford climate modelling), and any BOINC project works. BOINC computes while the computer is
-idle, which is when the screensaver is showing.
+install [BOINC](https://boinc.berkeley.edu) (the open-source platform behind SETI@home) and choose
+what to support:
+
+- [climateprediction.net](https://main.cpdn.org/) (University of Oxford climate modelling), the
+  closest match to this project's subject.
+- [Science United](https://scienceunited.org/) (added 2026-11-22), run by the BOINC team at UC
+  Berkeley. Volunteers pick science areas (environmental science among them) and Science United
+  assigns their computer to projects. This matters because climateprediction.net has most of its
+  work for 64-bit Linux, so a Mac or Windows computer attached only to it often sits idle.
+
+Any BOINC project works. BOINC computes while the computer is idle, which is when the screensaver
+is showing.
+
+**Volunteering without a computer:** the CoCoRaHS layer (2026-11-22) shows daily rain reports from
+volunteers who read a rain gauge every morning, and the Settings panel links to joining CoCoRaHS.
+That is crowdsourced *data*, which this project displays but does not collect.
 
 How it works:
 - The native shell (`src-tauri/src/boinc.rs`) talks to BOINC's GUI RPC on `127.0.0.1:31416`. It uses
@@ -14,8 +26,9 @@ How it works:
   answers for local clients without a password.
 - It never reads BOINC's password file, attaches or detaches projects, or changes BOINC settings.
   Nothing is sent off the machine.
-- Settings shows BOINC's state, its projects, running and waiting tasks, and the credit each project
-  has granted this computer. An optional status-bar line, on by default and shown only when BOINC is
+- Settings shows BOINC's state, its projects, running and waiting tasks, the credit each project
+  has granted this computer, and why BOINC has paused work when it says so (its
+  `task_suspend_reason`, e.g. "the computer is in use"). An optional status-bar line, on by default and shown only when BOINC is
   running an active project, gives a one-line summary in the saver.
 - Credit is BOINC's own measure of validated work. We show it as reported and never convert it into
   "impact" claims.

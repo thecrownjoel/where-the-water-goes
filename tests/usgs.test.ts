@@ -172,3 +172,17 @@ describe('multi-parameter parsing', () => {
     expect(r.readings).toHaveLength(2);
   });
 });
+
+describe('groundwater (72019)', () => {
+  const gw = (value: string, extra: Record<string, unknown> = {}) =>
+    feature({ monitoring_location_id: 'USGS-372535076581305', parameter_code: '72019', unit_of_measure: 'ft', value, ...extra });
+  it('keeps depth to water as published, including water above land surface', () => {
+    const r = parseLatest(fc([gw('31.98'), gw('-4.2', { monitoring_location_id: 'USGS-400000100000001' })]), { now: NOW, codes: ['72019'] });
+    expect(r.readings.map((x) => [x.param, x.value, x.unit])).toEqual([['72019', 31.98, 'ft'], ['72019', -4.2, 'ft']]);
+  });
+  it('never accepts a CoCoRaHS code from a USGS response', () => {
+    const r = parseLatest(fc([feature({ parameter_code: 'CCR-PRCP24', unit_of_measure: 'in', value: '1' })]), { now: NOW, codes: ['CCR-PRCP24'] });
+    expect(r.readings).toHaveLength(0);
+    expect(r.stats.rejected['unexpected parameter']).toBe(1);
+  });
+});

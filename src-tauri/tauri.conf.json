@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Where the Water Goes",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "org.wherethewatergoes.app",
   "build": {
     "frontendDist": "../dist",
@@ -17,7 +17,7 @@
         "script-src": "'self'",
         "style-src": "'self' 'unsafe-inline'",
         "img-src": "'self' data: blob:",
-        "connect-src": "'self' ipc: http://ipc.localhost https://api.waterdata.usgs.gov",
+        "connect-src": "'self' ipc: http://ipc.localhost https://api.waterdata.usgs.gov https://data.cocorahs.org",
         "worker-src": "'self' blob:",
         "object-src": "'none'",
         "base-uri": "'none'",
@@ -30,7 +30,7 @@
     "targets": "all",
     "category": "Education",
     "shortDescription": "Public U.S. water data as a living visualization",
-    "copyright": "Where the Water Goes contributors. Data: USGS, NOAA (public domain); Natural Earth (public domain).",
+    "copyright": "Where the Water Goes contributors. Data: USGS, NOAA (public domain); Natural Earth (public domain); CoCoRaHS (© Colorado Climate Center, CC BY 4.0).",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -68,7 +68,7 @@
     },
     "publisher": "Where the Water Goes contributors",
     "homepage": "https://github.com/thecrownjoel/where-the-water-goes",
-    "longDescription": "A screensaver and desktop visualization of live public U.S. water data: about 8,500 USGS stream gauges, rain gauges and lake and reservoir levels on a 3D globe with rivers and terrain. Every value shows its source and time. Optionally shows what your computer contributes to research through BOINC.",
+    "longDescription": "A screensaver and desktop visualization of public U.S. water data: about 8,500 live USGS stream gauges, rain gauges, lake and reservoir levels and groundwater wells, the nation's principal aquifers, and daily rain reports from CoCoRaHS volunteer observers, on a 3D globe with rivers and terrain. Every value shows its source and time. Optionally shows what your computer contributes to research through BOINC.",
     "license": "Apache-2.0",
     "licenseFile": "../LICENSE",
     "linux": {

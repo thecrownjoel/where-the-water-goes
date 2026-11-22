@@ -1,11 +1,13 @@
 // The globe: relief-shaded terrain and bathymetry from NOAA ETOPO1, land/lake masks from
 // Natural Earth, lit by the real sun position (or a night palette). Plus an atmosphere shell.
+// Optionally tinted by USGS principal aquifers (rock type), drawn into a texture over the U.S.
 
 import {
   AdditiveBlending, BackSide, CanvasTexture, ClampToEdgeWrapping, DataTexture, DataUtils, FrontSide,
   HalfFloatType, LinearFilter, Mesh, RedFormat, RepeatWrapping, ShaderMaterial, SphereGeometry, Vector3,
 } from 'three';
 import type { Basemap } from './assets.ts';
+import { AQUIFER_EXTENT, ROCK_COLORS } from '../geo/aquifers.ts';
 
 const MASK_W = 4096, MASK_H = 2048;
 
@@ -39,6 +41,45 @@ function buildMaskTexture(base: Basemap): CanvasTexture {
   tex.wrapS = RepeatWrapping;
   tex.wrapT = ClampToEdgeWrapping;
   tex.minFilter = LinearFilter; // no mipmaps: avoids a seam where atan() wraps
+  tex.magFilter = LinearFilter;
+  tex.generateMipmaps = false;
+  return tex;
+}
+
+const AQ_W = 3072, AQ_H = 1024;
+
+/** RGB = rock-type color, A = coverage, over AQUIFER_EXTENT. Thin dark lines separate aquifers. */
+function buildAquiferTexture(base: Basemap): CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = AQ_W; canvas.height = AQ_H;
+  const ctx = canvas.getContext('2d')!;
+  const { west, east, south, north } = AQUIFER_EXTENT;
+  const aq = base.aquifers;
+  if (aq) {
+    const sx = AQ_W / (east - west), sy = AQ_H / (north - south);
+    for (const a of aq.aquifers) {
+      const c = ROCK_COLORS[a.r] ?? [0.6, 0.6, 0.6];
+      ctx.fillStyle = `rgb(${c.map((v) => Math.round(v * 255)).join(',')})`;
+      ctx.strokeStyle = `rgba(${c.map((v) => Math.round(v * 120)).join(',')},1)`;
+      ctx.lineWidth = 1.2;
+      for (const rings of a.p) {
+        ctx.beginPath();
+        for (const ring of rings) {
+          for (let i = 0; i + 1 < ring.length; i += 2) {
+            const x = (ring[i] / aq.q - west) * sx, y = (north - ring[i + 1] / aq.q) * sy;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+        }
+        ctx.fill('evenodd');
+        ctx.stroke();
+      }
+    }
+  }
+  const tex = new CanvasTexture(canvas);
+  tex.flipY = false;
+  tex.wrapS = tex.wrapT = ClampToEdgeWrapping;
+  tex.minFilter = LinearFilter;
   tex.magFilter = LinearFilter;
   tex.generateMipmaps = false;
   return tex;
@@ -79,6 +120,9 @@ const globeFragment = /* glsl */ `
   uniform float uNight;      // 0 = follow sun, 1 = full night palette
   uniform float uIntensity;  // overall visual intensity 0..1
   uniform float uTime;
+  uniform sampler2D uAquifer;
+  uniform vec4 uAquiferExtent; // west, east, south, north (degrees)
+  uniform float uAquiferMix;   // 0 = hidden, 1 = shown
   varying vec3 vN;
   varying vec3 vWorld;
 
@@ -129,6 +173,15 @@ const globeFragment = /* glsl */ `
     terrain = mix(terrain, alpine, smoothstep(0.55, 1.0, e));
     vec3 water = vec3(0.04, 0.20, 0.27);
     vec3 albedo = mix(ocean, terrain, land);
+
+    // Principal aquifers: tint the land by rock type (not over lakes or sea).
+    vec2 uvA = vec2((lon - uAquiferExtent.x) / (uAquiferExtent.y - uAquiferExtent.x),
+                    (uAquiferExtent.w - lat) / (uAquiferExtent.w - uAquiferExtent.z));
+    float inA = step(0.0, uvA.x) * step(uvA.x, 1.0) * step(0.0, uvA.y) * step(uvA.y, 1.0);
+    vec4 aq = texture2D(uAquifer, clamp(uvA, 0.0, 1.0));
+    float aqA = aq.a * inA * land * (1.0 - lake) * uAquiferMix;
+    albedo = mix(albedo, aq.rgb * 0.4, aqA * 0.58);
+
     albedo = mix(albedo, water, lake * land);
 
     // Lighting
@@ -146,6 +199,9 @@ const globeFragment = /* glsl */ `
     // Broad, soft sheen rather than a hot spot (a hot spot blooms into a blob).
     float spec = pow(max(dot(up, hv), 0.0), 40.0) * (1.0 - land + lake * land) * day;
     lit += vec3(0.75, 0.82, 0.85) * spec * 0.06;
+
+    // Aquifers stay faintly readable on the night side.
+    lit += aq.rgb * aqA * (1.0 - day) * 0.035 * uIntensity;
 
     // Lakes and reservoirs glow softly at night — water is the subject.
     float shimmer = 0.85 + 0.15 * sin(uTime * 0.6 + lon * 3.0 + lat * 2.0);
@@ -196,6 +252,9 @@ export class Globe {
         uNight: { value: 0 },
         uIntensity: { value: 1 },
         uTime: { value: 0 },
+        uAquifer: { value: buildAquiferTexture(base) },
+        uAquiferExtent: { value: [AQUIFER_EXTENT.west, AQUIFER_EXTENT.east, AQUIFER_EXTENT.south, AQUIFER_EXTENT.north] },
+        uAquiferMix: { value: 0 },
       },
       side: FrontSide,
     });
@@ -220,5 +279,8 @@ export class Globe {
   set night(v: number) { this.material.uniforms.uNight.value = v; }
   get night() { return this.material.uniforms.uNight.value as number; }
   set intensity(v: number) { this.material.uniforms.uIntensity.value = v; }
+  /** 0 hides the aquifer tint, 1 shows it fully. */
+  set aquifers(v: number) { this.material.uniforms.uAquiferMix.value = v; }
+  get aquifers() { return this.material.uniforms.uAquiferMix.value as number; }
   update(t: number) { this.material.uniforms.uTime.value = t; }
 }

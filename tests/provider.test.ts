@@ -125,3 +125,45 @@ describe('purgeExpired', () => {
     expect(await c.keys()).toEqual(['new']);
   });
 });
+
+describe('CoCoRaHS layer', () => {
+  const header = 'ObservationDate,ObservationTime,EntryDateTime,StationNumber,StationName,Latitude,Longitude,TotalPrecipAmt,NewSnowDepth,NewSnowSWE,TotalSnowDepth,TotalSnowSWE,DateTimeStamp';
+  const row = (date: string, id: string, v: string) => `${date}, 13:00:00, ${date} 13:05:00, ${id}, Sample, 40.0, -105.0, ${v}, NA, NA, NA, NA, ${date} 13:05:00`;
+  const at = Date.parse('2026-11-22T15:00:00Z');
+  const bodies: Record<string, string> = {
+    '11/22/2026': `${header}\n${row('2026-11-22', 'CO-LR-1', '0.20')}\n`,
+    '11/21/2026': `${header}\n${row('2026-11-21', 'CO-LR-1', '0.90')}\n${row('2026-11-21', 'CO-LR-2', 'T')}\n`,
+  };
+  const urls: string[] = [];
+  const csvFetch = (async (u: string) => {
+    urls.push(u);
+    return new Response(bodies[new URL(u).searchParams.get('Date')!] ?? header);
+  }) as unknown as typeof fetch;
+
+  it('fetches both report dates one at a time, keeps the newest report per station, and caches', async () => {
+    const cache = new MemoryCache();
+    const r = await loadLayer(LAYERS.cocorahs, 'auto', { ...opts(cache, csvFetch), now: () => at });
+    expect(urls.map((u) => new URL(u).searchParams.get('Date'))).toEqual(['11/22/2026', '11/21/2026']);
+    expect(r.snapshot?.mode).toBe('live');
+    expect(r.snapshot?.provenance.sourceId).toBe('cocorahs-daily');
+    expect(r.snapshot?.provenance.requestUrls).toHaveLength(2);
+    expect(r.snapshot?.readings.map((x) => [x.id, x.value, x.qualifiers])).toEqual([['CO-LR-1', 0.2, []], ['CO-LR-2', 0, ['TRACE']]]);
+    expect((await cache.get(LAYERS.cocorahs.cacheKey))?.storedAt).toBe(at);
+  });
+
+  it('does not refetch for 6 hours', async () => {
+    const cache = new MemoryCache();
+    await loadLayer(LAYERS.cocorahs, 'auto', { ...opts(cache, csvFetch), now: () => at });
+    let called = false;
+    const spy = (async () => { called = true; return new Response(header); }) as unknown as typeof fetch;
+    const r = await loadLayer(LAYERS.cocorahs, 'auto', { ...opts(cache, spy), now: () => at + 5.9 * 3600_000 });
+    expect(called).toBe(false);
+    expect(r.snapshot?.mode).toBe('cached');
+  });
+
+  it('is hidden, never archived, when CoCoRaHS is down and nothing is cached', async () => {
+    const r = await loadLayer(LAYERS.cocorahs, 'auto', { ...opts(new MemoryCache(), down), now: () => at });
+    expect(r.snapshot).toBeNull();
+    expect(r.notice).toContain('CoCoRaHS unavailable');
+  });
+});

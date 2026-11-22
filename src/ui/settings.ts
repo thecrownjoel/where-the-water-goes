@@ -10,6 +10,12 @@ export interface Settings {
   showGauges: boolean;
   showRain: boolean;
   showLakes: boolean;
+  /** USGS groundwater wells (depth to water). */
+  showGroundwater: boolean;
+  /** CoCoRaHS volunteer 24-hour rain reports. */
+  showCocorahs: boolean;
+  /** USGS principal aquifers, tinted on the land. */
+  showAquifers: boolean;
   showCaptions: boolean;
   /** Show this computer's BOINC contribution in the status bar (only when BOINC is running). */
   showContribution: boolean;
@@ -25,6 +31,9 @@ export const DEFAULTS: Settings = {
   showGauges: true,
   showRain: true,
   showLakes: true,
+  showGroundwater: true,
+  showCocorahs: true,
+  showAquifers: true,
   showCaptions: true,
   showContribution: true,
 };
@@ -45,6 +54,9 @@ export function sanitize(raw: unknown): Settings {
   if (typeof r.showGauges === 'boolean') s.showGauges = r.showGauges;
   if (typeof r.showRain === 'boolean') s.showRain = r.showRain;
   if (typeof r.showLakes === 'boolean') s.showLakes = r.showLakes;
+  if (typeof r.showGroundwater === 'boolean') s.showGroundwater = r.showGroundwater;
+  if (typeof r.showCocorahs === 'boolean') s.showCocorahs = r.showCocorahs;
+  if (typeof r.showAquifers === 'boolean') s.showAquifers = r.showAquifers;
   if (typeof r.showCaptions === 'boolean') s.showCaptions = r.showCaptions;
   if (typeof r.showContribution === 'boolean') s.showContribution = r.showContribution;
   return s;

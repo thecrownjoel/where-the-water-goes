@@ -77,3 +77,22 @@ describe('rainSize', () => {
     expect(rainSize(-1)).toBe(rainSize(0));
   });
 });
+
+describe('new layers', () => {
+  it('settings default the new layers on and validate them', () => {
+    expect(sanitize(null)).toMatchObject({ showGroundwater: true, showCocorahs: true, showAquifers: true });
+    expect(sanitize({ showGroundwater: false, showCocorahs: 'no', showAquifers: 0 })).toMatchObject({ showGroundwater: false, showCocorahs: true, showAquifers: true });
+  });
+  it('formats groundwater depth and CoCoRaHS totals in words a person can read', () => {
+    expect(formatValue({ param: '72019', value: 31.98 })).toBe('31.98 ft below land surface');
+    expect(formatValue({ param: '72019', value: -4.2 })).toBe('4.20 ft above land surface');
+    expect(formatValue({ param: 'CCR-PRCP24', value: 1.2 })).toBe('1.20 in in 24 h');
+    expect(formatValue({ param: 'CCR-PRCP24', value: 0, qualifiers: ['TRACE'] })).toBe('Trace (less than 0.01 in)');
+  });
+  it('registers both new sources with credit lines', () => {
+    const ids = SOURCES.map((s) => s.id);
+    expect(ids).toContain('cocorahs-daily');
+    expect(ids).toContain('usgs-principal-aquifers');
+    expect(SOURCES.find((s) => s.id === 'cocorahs-daily')?.terms).toContain('CC BY 4.0');
+  });
+});

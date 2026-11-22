@@ -1,5 +1,7 @@
 // Loads the bundled offline basemap. Everything here ships with the app; no network needed.
 
+import type { AquiferFile } from '../geo/aquifers.ts';
+
 export interface ElevationGrid {
   width: number;
   height: number;
@@ -12,6 +14,8 @@ export interface Basemap {
   land: { q: number; polygons: number[][][] };
   lakes: { q: number; lakes: { n: string | null; k: 'lake' | 'reservoir'; r: number; g: number[][] }[] };
   rivers: { q: number; rivers: { n: string | null; r: number; w: number | null; m: string; d: number; c: number[] }[] };
+  /** USGS principal aquifers; null if the file is missing (the layer is then unavailable). */
+  aquifers: AquiferFile | null;
 }
 
 const BASE = `${import.meta.env.BASE_URL}data/base/`;
@@ -23,7 +27,7 @@ async function json<T>(name: string): Promise<T> {
 }
 
 export async function loadBasemap(): Promise<Basemap> {
-  const [meta, elevBuf, land, lakes, rivers] = await Promise.all([
+  const [meta, elevBuf, land, lakes, rivers, aquifers] = await Promise.all([
     json<{ width: number; height: number; cellDeg: number }>('elevation.json'),
     fetch(BASE + 'elevation.bin').then((r) => {
       if (!r.ok) throw new Error('failed to load elevation.bin');
@@ -32,8 +36,9 @@ export async function loadBasemap(): Promise<Basemap> {
     json<Basemap['land']>('land.json'),
     json<Basemap['lakes']>('lakes.json'),
     json<Basemap['rivers']>('rivers.json'),
+    json<AquiferFile>('aquifers.json').catch(() => null),
   ]);
   const data = new Int16Array(elevBuf);
   if (data.length !== meta.width * meta.height) throw new Error('elevation grid size mismatch');
-  return { elevation: { ...meta, data }, land, lakes, rivers };
+  return { elevation: { ...meta, data }, land, lakes, rivers, aquifers };
 }

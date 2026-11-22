@@ -3,7 +3,7 @@
 The code version of this registry, also shown in the app's About panel, is `src/data/registry.ts`.
 
 Statuses:
-- **Verified**: checked against a live endpoint or official documentation on 2026-11-01.
+- **Verified**: checked against a live endpoint or official documentation on 2026-11-01 (groundwater, aquifers and CoCoRaHS on 2026-11-22).
 - **Verify before implementation**: could not be confirmed.
 
 ## USGS Water Data OGC API — latest discharge (active)
@@ -58,6 +58,61 @@ Each layer is a separate request with its own provenance, cache entry and rules 
 - No "percent full" is shown: that would need storage-capacity curves we don't have.
 
 **Site IDs:** some rain gauges belong to cooperating agencies and use IDs like `MO005-394156092030201`. The ID check accepts digits in the agency prefix.
+
+### Groundwater wells (active, verified 2026-11-22)
+
+| | |
+|---|---|
+| Code | 72019 "Depth to water level, feet below land surface" (USGS `parameter-codes`) |
+| Request | the same `latest-continuous` endpoint, `parameter_code=72019` |
+| 2026-11-22 response | 4,161 features, 237 KB gzipped; about 1,700 with a value from the last 48 h |
+| Staleness cut / refetch | 48 h / every 3 h (water tables move slowly) |
+| Live-mode fallback | cache ≤ 7 days, otherwise **hidden** |
+
+**What the number means:**
+- The distance from land surface down to the water in the well. It **is** comparable between wells, unlike lake elevations.
+- Negative values are valid: water stands above land surface (flowing or artesian wells). They are kept, not clamped.
+- One well is one point. It doesn't describe a whole aquifer, and there is no comparison to "normal" (that needs daily statistics, which we don't fetch). Marks are all the same size; their shade shows depth on a log scale (pale = shallow, deep violet = 600 ft or more).
+
+## USGS Principal Aquifers (bundled, verified 2026-11-22)
+
+| | |
+|---|---|
+| Dataset | Principal Aquifers of the 48 Conterminous United States, Hawaii, Puerto Rico, and the U.S. Virgin Islands (USGS, 2003) |
+| DOI | https://doi.org/10.5066/P9Y2HOUJ (ScienceBase item `63140610d34e36012efa385d`) |
+| Retrieval | `https://water.usgs.gov/GIS/dsdl/aquifers_us.zip`, pinned by SHA-256 in `scripts/fetch-basemap-sources.mjs` |
+| Format | Shapefile, NAD83 geographic; 4,637 polygons with `AQ_NAME`, `AQ_CODE`, `ROCK_NAME`, `ROCK_TYPE` |
+| Terms | USGS-authored: U.S. public domain. ScienceBase lists no other constraint |
+| Build | `scripts/build-aquifers.mjs` drops "Other rocks" (`AQ_CODE` 999), simplifies to 0.02° (~2 km) and drops rings under ~5 km, giving 63 aquifers, ~42,000 points, 574 KB |
+
+**Limitations:**
+- A 1:2,500,000 national map. It shows where each principal aquifer is the uppermost one; it cannot say what lies under a particular property. The click card says so.
+- Deeper aquifers, local aquifers and Alaska are not in the dataset.
+- Some well-known places fall in "other rocks" on this map (for example central San Antonio and Honolulu at the points we checked, in the unsimplified source as well).
+
+## CoCoRaHS daily precipitation (active, verified 2026-11-22)
+
+The **Community Collaborative Rain, Hail and Snow Network** is a non-profit network of volunteers who read a standard manual rain gauge every morning. It is run from the Colorado Climate Center. It is **not a government source**.
+
+| | |
+|---|---|
+| Endpoint | `https://data.cocorahs.org/export/exportreports.aspx?ReportType=Daily&dtf=3&TimesInGMT=True&Format=CSV&ReportDateType=reportdate&Date=MM/DD/YYYY`: the export behind CoCoRaHS's public [Export Manager](https://data.cocorahs.org/cocorahs/export/exportmanager.aspx). Anonymous, but **not a documented API** |
+| Response | CSV: `ObservationDate, ObservationTime, EntryDateTime, StationNumber, StationName, Latitude, Longitude, TotalPrecipAmt, NewSnowDepth, NewSnowSWE, TotalSnowDepth, TotalSnowSWE, DateTimeStamp`. A national day was 11,525 rows, 618 KB gzipped (1.6 MB raw), ~1 s |
+| Times | `Date` selects the observer's *local* report date. With `TimesInGMT=True` and `dtf=3`, date + time are the observation instant in UTC (checked against evening reports that cross midnight UTC) |
+| CORS | `access-control-allow-origin: *`, including for the macOS saver's `wtrshd://app` origin |
+| Values | `T` = trace; `NA` = not reported. On 2026-11-21: 8,622 zero, 2,253 with rain, 627 trace, 23 NA |
+| Terms | [Data Usage Policy](https://www.cocorahs.org/Content.aspx?page=datausagepolicy): CC BY 4.0, © Colorado Climate Center, provided "as is"; please acknowledge the source when displaying. The [privacy policy](https://www.cocorahs.org/Content.aspx?page=privacypolicy) tells volunteers that latitude, longitude and station name are public |
+| Credit | About panel, gauge card and `NOTICE`, with the license link and a note of our changes |
+
+**How we use it** (`src/data/cocorahs.ts`):
+- Two requests per refresh: today's and yesterday's report dates, as dated on the U.S. East Coast, fetched one after the other. Each station's newest report is kept; reports observed more than 36 h ago are dropped.
+- **Polite cadence:** at most every 6 hours, cached locally (IndexedDB) for up to 36 hours. A computer running the saver all day makes at most 4 refreshes (8 requests, roughly 5 MB). In demo mode it makes none.
+- **Privacy:** coordinates are rounded to 0.01° (~1 km) during parsing; the precise location is never stored. The test fixture uses made-up stations at city centres.
+- Only standard station numbers (`ST-CCC-NNN`, e.g. `MN-HN-635`, `CAN-ON-12`, `BHS-NP-5`) are kept. The export also carries ~90 partner-network stations with other ID formats (e.g. `lanc015`); their terms aren't stated, so they are left out.
+- Values above 50 in (more than the U.S. 24-hour record) are rejected. Other unusual values are shown as reported; CoCoRaHS may correct reports later.
+- Dry reports are counted but not drawn; a trace is drawn at the smallest size. Live-mode fallback: cache ≤ 36 h, otherwise **hidden**; never the archived snapshot.
+
+**Not yet confirmed:** CoCoRaHS publishes no rate limits or automated-access terms for the export. The license covers the data, not server load, so the maintainers should tell CoCoRaHS (info@cocorahs.org) what the app does and its expected volume before wide distribution. If they prefer, a once-a-day mirror on static hosting (allowed by CC BY) would cut their load to one request per day.
 
 **Legacy API:** `waterservices.usgs.gov` (IV/DV) still answered on 2026-11-01. USGS says it retires in Q1 2027. We do not use it.
 

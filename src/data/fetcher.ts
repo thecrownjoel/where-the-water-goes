@@ -54,6 +54,22 @@ export async function fetchJson(
   deps: FetchDeps = { fetch: globalThis.fetch.bind(globalThis) },
   signal?: AbortSignal,
 ): Promise<unknown> {
+  const text = await fetchText(url, policy, deps, signal, 'application/geo+json, application/json');
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new FetchError('malformed JSON');
+  }
+}
+
+/** Fetch a text body (CSV, JSON…) with the same retry, timeout and size rules as fetchJson. */
+export async function fetchText(
+  url: string,
+  policy: FetchPolicy = DEFAULT_POLICY,
+  deps: FetchDeps = { fetch: globalThis.fetch.bind(globalThis) },
+  signal?: AbortSignal,
+  accept = 'text/csv, text/plain, */*',
+): Promise<string> {
   const wait = deps.sleep ?? sleep;
   let lastErr: unknown = null;
   for (let attempt = 0; attempt <= policy.retries; attempt++) {
@@ -68,7 +84,7 @@ export async function fetchJson(
     signal?.addEventListener('abort', onAbort, { once: true });
     const timer = setTimeout(() => ctrl.abort(), policy.timeoutMs);
     try {
-      const res = await deps.fetch(url, { signal: ctrl.signal, headers: { Accept: 'application/geo+json, application/json' } });
+      const res = await deps.fetch(url, { signal: ctrl.signal, headers: { Accept: accept } });
       if (!res.ok) {
         const retryAfter = parseRetryAfter(res.headers.get('retry-after'));
         const err = new FetchError(`HTTP ${res.status}`, res.status, retryAfter);
@@ -81,15 +97,11 @@ export async function fetchJson(
       if (Number.isFinite(declared) && declared > policy.maxBytes) throw new FetchError('response too large');
       const text = await res.text();
       if (text.length > policy.maxBytes) throw new FetchError('response too large');
-      try {
-        return JSON.parse(text);
-      } catch {
-        throw new FetchError('malformed JSON');
-      }
+      return text;
     } catch (e) {
       if (signal?.aborted) throw new FetchError('aborted');
       if (e instanceof FetchError && e.status !== null && !(e.status === 408 || e.status === 429 || e.status >= 500)) throw e;
-      if (e instanceof FetchError && (e.message === 'response too large' || e.message === 'malformed JSON')) throw e;
+      if (e instanceof FetchError && e.message === 'response too large') throw e;
       lastErr = e instanceof FetchError ? e : new FetchError(e instanceof Error ? e.message : 'network error');
     } finally {
       clearTimeout(timer);

@@ -23,19 +23,30 @@ export interface Provenance {
   sourceId: string;
   /** When this client (or the snapshot builder) received the data. ISO 8601 UTC. */
   retrievedAt: string;
-  /** Exact request URL, for reproducibility. */
+  /** Exact request URL, for reproducibility (the first one, when a layer needs several). */
   requestUrl: string;
+  /** Every request URL, when a layer is built from more than one request. */
+  requestUrls?: string[];
 }
 
-/** USGS parameter codes this app understands (see PARAMETERS in usgs.ts). */
-export type ParameterCode = '00060' | '00045' | '62614' | '62615';
+/**
+ * What a reading measures. The numeric codes are USGS parameter codes (see PARAMETERS in
+ * usgs.ts). 'CCR-PRCP24' is not a USGS code: it is this app's name for a CoCoRaHS volunteer's
+ * 24-hour precipitation report.
+ */
+export type ParameterCode = '00060' | '00045' | '62614' | '62615' | '72019' | 'CCR-PRCP24';
+
+/** One layer of point readings on the globe. Each has its own source, cache and rules (layers.ts). */
+export type LayerId = 'discharge' | 'precipitation' | 'lake-level' | 'groundwater' | 'cocorahs';
 
 /** Units as normalised by this app (USGS spells ft^3/s and ft3/s variously). */
 export type Unit = 'ft3/s' | 'in' | 'ft';
 
 export interface GaugeReading {
-  /** Agency monitoring location id, e.g. "USGS-01646500". */
+  /** Monitoring location id, e.g. "USGS-01646500", or a CoCoRaHS station number "MN-HN-635". */
   id: string;
+  /** Station name, where the source publishes one (CoCoRaHS). */
+  name?: string;
   lon: number;
   lat: number;
   /** USGS parameter code of this value. */
@@ -46,7 +57,7 @@ export interface GaugeReading {
   /** Observation time from the agency. ISO 8601 UTC. */
   observedAt: string;
   approval: ApprovalStatus;
-  /** Agency qualifier codes, e.g. ["ICE"], ["ESTIMATED"]. */
+  /** Agency qualifier codes, e.g. ["ICE"], ["ESTIMATED"]; ["TRACE"] for a CoCoRaHS trace report. */
   qualifiers: string[];
   kind: Extract<DataKind, 'observation' | 'estimate'>;
 }
@@ -60,7 +71,7 @@ export interface ParseStats {
 
 export interface GaugeSnapshot {
   /** Which layer this snapshot belongs to (absent in files written before layers existed). */
-  layer?: 'discharge' | 'precipitation' | 'lake-level';
+  layer?: LayerId;
   readings: GaugeReading[];
   provenance: Provenance;
   mode: SnapshotMode;

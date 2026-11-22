@@ -3,8 +3,16 @@ Copyright 2026 Where the Water Goes contributors
 
 This product includes data from:
 - U.S. Geological Survey (USGS) Water Data for the Nation — U.S. public domain.
+- U.S. Geological Survey, 2003, Principal Aquifers of the 48 Conterminous United States, Hawaii,
+  Puerto Rico, and the U.S. Virgin Islands, https://doi.org/10.5066/P9Y2HOUJ — U.S. public domain.
+- CoCoRaHS (Community Collaborative Rain, Hail and Snow Network), https://www.cocorahs.org —
+  Copyright Colorado Climate Center, licensed under the Creative Commons Attribution 4.0
+  International License (https://creativecommons.org/licenses/by/4.0/), provided "as is".
+  Changes made by this product: station locations rounded to 0.01 degrees; only standard
+  CoCoRaHS stations kept; values above 50 inches dropped. The bundled archived snapshot
+  (public/data/demo/cocorahs-snapshot.json) is redistributed under the same license.
 - NOAA NCEI ETOPO1 Global Relief Model (Amante & Eakins, 2009) — free use and redistribution.
 - Natural Earth (naturalearthdata.com) — public domain.
 
 This project is independent. It is not affiliated with or endorsed by USGS, NOAA, NASA,
-or any other agency.
+CoCoRaHS, or any other agency or organization.
