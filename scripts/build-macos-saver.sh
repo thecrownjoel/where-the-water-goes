@@ -9,7 +9,9 @@ cd "$(dirname "$0")/.."
 
 OUT="build/macos-saver/Where the Water Goes.saver"
 EXE=WhereTheWaterGoes
-MIN=12.0
+# 13.0: newer Command Line Tools (macOS 27 SDK) ship no x86_64 Swift back-deployment
+# libraries for older targets, so Intel slices for macOS 12 no longer link.
+MIN=13.0
 
 if [[ "${SKIP_WEB_BUILD:-0}" != 1 ]]; then npm run build; fi
 

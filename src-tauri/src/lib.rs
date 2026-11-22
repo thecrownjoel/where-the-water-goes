@@ -13,6 +13,7 @@ mod boinc;
 mod idle;
 mod launch;
 mod preview;
+mod saver_exit;
 
 use launch::Launch;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -32,6 +33,8 @@ struct AppState {
     idle_minutes: AtomicU32,
     /// Saver windows currently open.
     saver_open: AtomicBool,
+    /// Incremented each time the saver opens, so an old exit watcher knows to stop.
+    saver_generation: AtomicU32,
 }
 
 const SAVER_PREFIX: &str = "saver-";
@@ -74,7 +77,31 @@ fn open_saver(app: &AppHandle) -> tauri::Result<()> {
             .build()?;
         raise_above_menu_bar(&w);
     }
+    start_exit_watcher(app.clone(), state.saver_generation.fetch_add(1, Ordering::SeqCst) + 1);
     Ok(())
+}
+
+/// OS-level backstop for exit-on-input (see saver_exit.rs). Runs until the saver closes.
+fn start_exit_watcher(app: AppHandle, generation: u32) {
+    std::thread::spawn(move || {
+        let started = std::time::Instant::now();
+        let mut watch = saver_exit::Watch::default();
+        loop {
+            std::thread::sleep(Duration::from_secs_f64(saver_exit::POLL_SECS));
+            let state = app.state::<Arc<AppState>>();
+            if !state.saver_open.load(Ordering::SeqCst) || state.saver_generation.load(Ordering::SeqCst) != generation {
+                return;
+            }
+            let cursor = app.cursor_position().ok().map(|p| (p.x, p.y));
+            if watch.poll(started.elapsed().as_secs_f64(), idle::seconds(), cursor) {
+                close_savers(&app);
+                if state.one_shot.load(Ordering::SeqCst) {
+                    app.exit(0);
+                }
+                return;
+            }
+        }
+    });
 }
 
 /// On macOS a normal always-on-top window still sits below the menu bar and Dock. Raise it
