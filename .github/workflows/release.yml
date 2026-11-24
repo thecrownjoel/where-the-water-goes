@@ -186,6 +186,7 @@ jobs:
       - run: npm ci
       - name: Import Developer ID certificate
         id: cert
+        shell: bash
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -198,7 +199,14 @@ jobs:
           echo "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/cert.p12"
           security import "$RUNNER_TEMP/cert.p12" -k "$kc" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$pw" "$kc"
-          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          existing_keychains=$(security list-keychains -d user)
+          keychains=("$kc")
+          while read -r path; do
+            [ -n "$path" ] || continue
+            path=${path#\"}
+            keychains+=("${path%\"}")
+          done <<< "$existing_keychains"
+          security list-keychains -d user -s "${keychains[@]}"
           echo "signed=1" >> "$GITHUB_OUTPUT"
       - name: Build .saver
         env:
